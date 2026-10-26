@@ -39,6 +39,7 @@ export const appConfig = registerAs('app', () => ({
   socketPort: num('SOCKET_PORT'),
   graphqlPort: num('GRAPHQL_PORT'),
   grpcPort: num('GRPC_PORT'),
+  listenHost: env('LISTEN_HOST'),
   apiPrefix: env('API_PREFIX'),
   defaultVersion: env('API_DEFAULT_VERSION'),
   trustProxy: parseTrustProxy(env('TRUST_PROXY')),

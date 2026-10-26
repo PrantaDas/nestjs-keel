@@ -34,6 +34,12 @@ describe('environment validation', () => {
     );
   });
 
+  it('binds every listener to an IP address, all interfaces by default', () => {
+    expect(validate(base).value.LISTEN_HOST).toBe('0.0.0.0');
+    expect(validate({ ...base, LISTEN_HOST: '127.0.0.1' }).error).toBeUndefined();
+    expect(validate({ ...base, LISTEN_HOST: 'my-host' }).error?.message).toMatch(/LISTEN_HOST/);
+  });
+
   it('rejects offset-style business time zones', () => {
     const { error } = validate({ ...base, BUSINESS_TIMEZONE: '+04:00' });
     expect(error?.message).toMatch(/IANA time zone name/);

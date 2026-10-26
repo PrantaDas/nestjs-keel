@@ -53,6 +53,8 @@ export const envValidationSchema = Joi.object({
   SOCKET_PORT: Joi.number().port().default(3001),
   GRAPHQL_PORT: Joi.number().port().default(3002),
   GRPC_PORT: Joi.number().port().default(50051),
+  // Address the listeners bind to: 0.0.0.0 in containers, 127.0.0.1 behind a reverse proxy on a VPS.
+  LISTEN_HOST: Joi.string().ip({ cidr: 'forbidden' }).default('0.0.0.0'),
   API_PREFIX: Joi.string().default('api'),
   API_DEFAULT_VERSION: Joi.string().pattern(/^\d+$/).default('1'),
   TRUST_PROXY: Joi.string().default('1'),

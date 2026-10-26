@@ -53,24 +53,24 @@ export async function createGraphqlApp(): Promise<NestExpressApplication> {
 export async function startApi(): Promise<void> {
   const app = await createApiApp();
   installGracefulShutdown(app, 'API');
-  const { apiPort, apiPrefix, defaultVersion } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
-  await app.listen(apiPort, '0.0.0.0');
+  const { apiPort, apiPrefix, defaultVersion, listenHost } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+  await app.listen(apiPort, listenHost);
   logger.log(`API listening on :${apiPort}/${apiPrefix}/v${defaultVersion}`);
 }
 
 export async function startSocket(): Promise<void> {
   const app = await createSocketApp();
   installGracefulShutdown(app, 'Socket');
-  const { socketPort } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
-  await app.listen(socketPort, '0.0.0.0');
+  const { socketPort, listenHost } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+  await app.listen(socketPort, listenHost);
   logger.log(`Socket server listening on :${socketPort}`);
 }
 
 export async function startGraphql(): Promise<void> {
   const app = await createGraphqlApp();
   installGracefulShutdown(app, 'GraphQL');
-  const { graphqlPort } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
-  await app.listen(graphqlPort, '0.0.0.0');
+  const { graphqlPort, listenHost } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+  await app.listen(graphqlPort, listenHost);
   logger.log(`GraphQL listening on :${graphqlPort}`);
 }
 
@@ -81,8 +81,10 @@ export async function startGraphql(): Promise<void> {
 export async function createGrpcApp(port?: number): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(GrpcAppModule, { ...factoryOptions, bodyParser: false });
   app.useLogger(app.get(Logger));
-  const { grpcPort } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
-  app.connectMicroservice<MicroserviceOptions>(grpcServerOptions(port ?? grpcPort), { inheritAppConfig: true });
+  const { grpcPort, listenHost } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+  app.connectMicroservice<MicroserviceOptions>(grpcServerOptions(port ?? grpcPort, listenHost), {
+    inheritAppConfig: true,
+  });
   return app;
 }
 

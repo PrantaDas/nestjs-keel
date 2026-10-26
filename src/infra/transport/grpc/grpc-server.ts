@@ -10,11 +10,12 @@ export function protoPackages(): string[] {
  * Nest gRPC server options: every proto under proto/, the same loader options as the client, and
  * limits that keep one slow or huge call from hurting the others.
  */
-export function grpcServerOptions(port: number): GrpcOptions {
+export function grpcServerOptions(port: number, host = '0.0.0.0'): GrpcOptions {
   return {
     transport: Transport.GRPC,
     options: {
-      url: `0.0.0.0:${port}`,
+      // IPv6 literals need brackets in a gRPC target.
+      url: `${host.includes(':') ? `[${host}]` : host}:${port}`,
       package: [...new Set(protoPackages())],
       protoPath: protoFiles(),
       loader: { ...PROTO_LOADER_OPTIONS, includeDirs: [PROTO_ROOT] },

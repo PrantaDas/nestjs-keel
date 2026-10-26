@@ -3,14 +3,14 @@
 One image, six entry points. Each process boots its own root module on top of the shared
 `CoreModule` and can be scaled on its own. ADR: [0001](../adr/0001-modular-monolith-and-process-model.md).
 
-| Process         | Start (image)               | Dev                | Port                | Scale                                                                                | Health                          |
-| --------------- | --------------------------- | ------------------ | ------------------- | ------------------------------------------------------------------------------------ | ------------------------------- |
-| api             | `node dist/main.api.js`     | `pnpm dev:api`     | `API_PORT` 3000     | horizontally, behind a load balancer                                                 | `/api/health`, `/api/ready`     |
-| graphql         | `node dist/main.graphql.js` | `pnpm dev:graphql` | `GRAPHQL_PORT` 3002 | horizontally (sticky not needed: `graphql-ws` state is per socket, events via Redis) | same paths                      |
-| socket          | `node dist/main.socket.js`  | `pnpm dev:socket`  | `SOCKET_PORT` 3001  | horizontally; **sticky sessions** only if clients may fall back to HTTP long-polling | same paths                      |
-| worker          | `node dist/main.worker.js`  | `pnpm dev:worker`  | none                | by queue depth; concurrency per queue in the policy table                            | heartbeat (ops)                 |
-| cron            | `node dist/main.cron.js`    | `pnpm dev:cron`    | none                | 1 is enough; 2 for availability (Redis locks: one run per tick)                      | heartbeat (ops)                 |
-| grpc (optional) | `node dist/main.grpc.js`    | `pnpm dev:grpc`    | `GRPC_PORT` 50051   | horizontally                                                                         | gRPC health via deadline errors |
+| Process         | Start (image)               | Dev                | Port                | Scale                                                                                         | Health                          |
+| --------------- | --------------------------- | ------------------ | ------------------- | --------------------------------------------------------------------------------------------- | ------------------------------- |
+| api             | `node dist/main.api.js`     | `pnpm dev:api`     | `API_PORT` 3000     | horizontally, behind a load balancer                                                          | `/api/health`, `/api/ready`     |
+| graphql         | `node dist/main.graphql.js` | `pnpm dev:graphql` | `GRAPHQL_PORT` 3002 | horizontally (sticky not needed: `graphql-ws` state is per socket, events via Redis)          | same paths                      |
+| socket          | `node dist/main.socket.js`  | `pnpm dev:socket`  | `SOCKET_PORT` 3001  | horizontally, no sticky sessions (WebSocket-only transport, broadcasts via the Redis adapter) | same paths                      |
+| worker          | `node dist/main.worker.js`  | `pnpm dev:worker`  | none                | by queue depth; concurrency per queue in the policy table                                     | heartbeat (ops)                 |
+| cron            | `node dist/main.cron.js`    | `pnpm dev:cron`    | none                | 1 is enough; 2 for availability (Redis locks: one run per tick)                               | heartbeat (ops)                 |
+| grpc (optional) | `node dist/main.grpc.js`    | `pnpm dev:grpc`    | `GRPC_PORT` 50051   | horizontally                                                                                  | gRPC health via deadline errors |
 
 `/api/health` is liveness (the process answers: restart it if not). `/api/ready` is readiness
 (MongoDB and core Redis reachable, not shutting down: route traffic to it); the cache Redis being

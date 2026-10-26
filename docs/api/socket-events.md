@@ -16,6 +16,9 @@ const socket = io('http://localhost:3001', {
 socket.on('connect_error', (err) => console.log(err.data)); // the standard error envelope
 ```
 
+The server accepts **WebSocket only** (no HTTP long-polling), so clients must pass
+`transports: ['websocket']`, and any number of socket instances run without sticky sessions.
+
 The handshake runs the same checks as REST: a valid access token **and** a live session (a revoked
 session or disabled account cannot open a socket with a still-unexpired token). Each socket joins
 `user:<userId>` and `session:<sessionId>`; signing out, a password change or an admin revocation

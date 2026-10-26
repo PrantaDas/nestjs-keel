@@ -87,7 +87,7 @@ const boundaryPatterns = (own) => {
 };
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**', 'node_modules/**', '*.config.js', '*.config.mjs', 'scripts/**/*.mjs', 'src/infra/transport/grpc/generated/**'] },
+  { ignores: ['dist/**', 'coverage/**', 'node_modules/**', '*.config.js', '*.config.mjs', '*.config.cjs', 'scripts/**/*.mjs', 'src/infra/transport/grpc/generated/**'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   prettier,

@@ -1,0 +1,220 @@
+# Render Blueprint: every process from the one Dockerfile, plus both Redis instances.
+# Guide (prerequisites, first deploy, scaling): docs/architecture/deployment.md#render
+#
+# Not on Render, bring your own:
+#   - MongoDB replica set (MongoDB Atlas): MONGO_URI
+#   - S3 bucket, SMTP, Twilio, FCM, Stripe, Sentry: optional, empty = feature off
+#   - RabbitMQ (CloudAMQP) only when a module is extracted (docs/architecture/microservices.md)
+#
+# Values marked `sync: false` are asked for in the dashboard when the Blueprint is created; leave
+# optional ones empty (APP_WEB_URL and MONGO_URI are required). Secrets are never committed here.
+#
+# Plans: background workers, pre-deploy commands and Key Value persistence need paid plans
+# (`starter` and up). Region: keep every resource in one region so they share the private network.
+
+envVarGroups:
+  - name: app-shared
+    envVars:
+      # ── App ──
+      - key: NODE_ENV
+        value: production
+      - key: APP_NAME
+        value: nest-boilerplate
+      - key: API_PREFIX
+        value: api
+      # Render's load balancer is one proxy hop in front of the app (real client IPs for rate limits).
+      - key: TRUST_PROXY
+        value: '1'
+      - key: CORS_ORIGINS
+        sync: false
+      # Required: links in e-mails point here (an empty value fails the boot).
+      - key: APP_WEB_URL
+        sync: false
+      - key: SWAGGER_ENABLED
+        value: 'false'
+      - key: BUSINESS_TIMEZONE
+        value: UTC
+      # ── Logging (JSON to stdout: Render collects it; add a log stream for retention) ──
+      - key: LOG_LEVEL
+        value: info
+      - key: LOG_PRETTY
+        value: 'false'
+      # ── MongoDB (Atlas; must be a replica set). Indexes are applied by the pre-deploy command. ──
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_AUTO_INDEX
+        value: 'false'
+      # ── Auth: Render generates two different random 256-bit secrets once ──
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ISSUER
+        value: nest-boilerplate
+      - key: JWT_AUDIENCE
+        value: nest-boilerplate
+      - key: API_KEYS
+        sync: false
+      - key: OTP_DEV_LOG
+        value: 'false'
+      # ── Optional integrations (empty = switched off) ──
+      - key: AWS_REGION
+        value: us-east-1
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_PUBLIC_BASE_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: '587'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM
+        sync: false
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # When enabling e-mail or Stripe, also add (non-empty) MAIL_FROM and STRIPE_SUCCESS_URL,
+      # STRIPE_CANCEL_URL, STRIPE_PORTAL_RETURN_URL to this group: their defaults point at localhost.
+      # ── Observability ──
+      - key: SENTRY_DSN
+        sync: false
+      - key: OTEL_ENABLED
+        value: 'false'
+      # ── Shutdown: finishes within 25 s; services below allow 30 s (maxShutdownDelaySeconds) ──
+      - key: SHUTDOWN_TIMEOUT_MS
+        value: '25000'
+
+services:
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  # Core: queues, sessions, locks, OTP, rate limits, pub/sub. Must never evict.
+  - type: keyvalue
+    name: redis-core
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: noeviction
+    ipAllowList: [] # private network only
+
+  # Cache: optional, may evict.
+  - type: keyvalue
+    name: redis-cache
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  # ── HTTP processes ─────────────────────────────────────────────────────────
+  # Each listens on Render's default port 10000. Readiness gates zero-downtime deploys: an
+  # instance takes traffic only once MongoDB and the core Redis answer.
+  - type: web
+    name: api
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node --enable-source-maps dist/main.api.js
+    # Runs once per deploy, with the new image, before any instance switches over. Migrations must
+    # stay compatible with the version still running (expand, deploy, contract).
+    preDeployCommand: node dist/cli/migrate.js up && node dist/cli/sync-indexes.js --apply
+    healthCheckPath: /api/ready
+    maxShutdownDelaySeconds: 30
+    numInstances: 1
+    envVars:
+      - fromGroup: app-shared
+      - key: API_PORT
+        value: '10000'
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: redis-core, property: connectionString }
+      - key: REDIS_CACHE_URL
+        fromService: { type: keyvalue, name: redis-cache, property: connectionString }
+
+  # Remove this service if no client uses GraphQL.
+  - type: web
+    name: graphql
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node --enable-source-maps dist/main.graphql.js
+    healthCheckPath: /api/ready
+    maxShutdownDelaySeconds: 30
+    numInstances: 1
+    envVars:
+      - fromGroup: app-shared
+      - key: GRAPHQL_PORT
+        value: '10000'
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: redis-core, property: connectionString }
+      - key: REDIS_CACHE_URL
+        fromService: { type: keyvalue, name: redis-cache, property: connectionString }
+
+  # WebSocket-only Socket.IO (clients connect with `transports: ['websocket']`), so instances need
+  # no sticky sessions; broadcasts cross instances through redis-core. Remove if unused.
+  - type: web
+    name: socket
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node --enable-source-maps dist/main.socket.js
+    healthCheckPath: /api/ready
+    maxShutdownDelaySeconds: 30
+    numInstances: 1
+    envVars:
+      - fromGroup: app-shared
+      - key: SOCKET_PORT
+        value: '10000'
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: redis-core, property: connectionString }
+      - key: REDIS_CACHE_URL
+        fromService: { type: keyvalue, name: redis-cache, property: connectionString }
+
+  # ── Background processes ───────────────────────────────────────────────────
+  # Jobs, outbox relay. Scale numInstances with queue depth (ops: /api/v1/admin/ops/queues).
+  - type: worker
+    name: worker
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node --enable-source-maps dist/main.worker.js
+    maxShutdownDelaySeconds: 30
+    numInstances: 1
+    envVars:
+      - fromGroup: app-shared
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: redis-core, property: connectionString }
+      - key: REDIS_CACHE_URL
+        fromService: { type: keyvalue, name: redis-cache, property: connectionString }
+
+  # Long-running scheduler (@LockedCron), not a Render cron job: Render cron jobs start a process per
+  # schedule, while this one holds many schedules with Redis locks. One instance is enough.
+  - type: worker
+    name: cron
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node --enable-source-maps dist/main.cron.js
+    maxShutdownDelaySeconds: 30
+    numInstances: 1
+    envVars:
+      - fromGroup: app-shared
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: redis-core, property: connectionString }
+      - key: REDIS_CACHE_URL
+        fromService: { type: keyvalue, name: redis-cache, property: connectionString }

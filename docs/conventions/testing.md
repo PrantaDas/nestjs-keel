@@ -57,10 +57,12 @@ await eventually(async () => t.fakes.push.sentTo('token-1').length === 1); // as
 `tools/playground/` is a single page served by `pnpm playground` (port 5173, already allowed by
 `CORS_ORIGINS`). It uses the real browser clients (`socket.io-client`, `graphql-ws`, served from
 `node_modules`) against the running api, graphql and socket processes: sign up, live Socket.IO and
-GraphQL subscription feeds, create and list notes over every channel. **Run all checks** creates a
+GraphQL subscription feeds, create and list notes over every channel, and a notes table that
+reloads itself on every subscription event (Pin and Delete are GraphQL mutations that never touch the
+table: the change comes back through the subscription, to every tab of that person). **Run all checks** creates a
 fresh account and verifies, in order: handshake refusal without a token, both live channels, one
-note per channel, every push on both feeds, the three lists, and the same error contract on REST,
-GraphQL and Socket.IO. Other hosts: `?api=…&graphql=…&socket=…` (add the page's origin to
+note per channel, every push on both feeds, the three lists, the same error contract on REST,
+GraphQL and Socket.IO, and the live table following a pin and a delete by itself. Other hosts: `?api=…&graphql=…&socket=…` (add the page's origin to
 `CORS_ORIGINS`).
 
 ## Smoke and load

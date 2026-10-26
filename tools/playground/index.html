@@ -207,6 +207,36 @@
         font-weight: 700;
         margin: 8px 0 0;
       }
+      .inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        color: var(--text);
+        font-size: 13px;
+      }
+      .inline input {
+        width: auto;
+      }
+      button.mini {
+        padding: 2px 8px;
+        font-size: 12px;
+      }
+      td.actions {
+        white-space: nowrap;
+      }
+      /* A row the subscription just changed. */
+      tr.flash td {
+        animation: flash 1.6s ease-out;
+      }
+      @keyframes flash {
+        from {
+          background: color-mix(in srgb, var(--accent) 28%, transparent);
+        }
+        to {
+          background: transparent;
+        }
+      }
     </style>
   </head>
   <body data-result="idle">
@@ -275,7 +305,14 @@
 
       <section class="wide">
         <h2>5. My notes</h2>
-        <div class="row" style="margin-top: 0">
+        <div class="row" style="margin-top: 0; align-items: center">
+          <label class="inline"
+            ><input type="checkbox" id="live" checked /> Live: reload when the GraphQL subscription reports a
+            change</label
+          >
+          <span class="pill" id="live-pill">waiting for the subscription</span>
+        </div>
+        <div class="row">
           <button id="list-rest" disabled>Load via REST</button>
           <button id="list-gql" disabled>Load via GraphQL (with owner)</button>
         </div>
@@ -284,9 +321,12 @@
             <thead>
               <tr>
                 <th>Title</th>
+                <th>Pinned</th>
+                <th>Version</th>
                 <th>Business day</th>
                 <th>Owner</th>
                 <th>Id</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="notes"></tbody>
@@ -298,7 +338,8 @@
       <section class="wide">
         <h2>Run all checks</h2>
         <p class="status" style="margin-top: 0">
-          A fresh account, both live channels, one note per channel, then every event and list is checked.
+          A fresh account, both live channels, one note per channel, then every event and list is checked, and the table
+          must follow a pin and a delete by itself.
         </p>
         <div class="row"><button id="run" class="primary">Run all checks</button></div>
         <ol class="checks" id="checks"></ol>
@@ -427,9 +468,13 @@
             on: {
               connected: () => {
                 pill('sub-pill', true, 'subscribed');
+                pill('live-pill', true, 'live');
                 resolve();
               },
-              closed: () => pill('sub-pill', false, 'disconnected'),
+              closed: () => {
+                pill('sub-pill', false, 'disconnected');
+                pill('live-pill', false, 'not live: subscription closed');
+              },
               error: (err) => reject(err instanceof Error ? err : new Error('GraphQL subscription refused.')),
             },
           });
@@ -442,6 +487,7 @@
                 seen.subscription.push(data.noteChanged);
                 const c = data.noteChanged;
                 log('sub-log', `${c.action} ${c.noteId} v${c.version}`);
+                liveRefresh(c);
               },
               error: (err) => log('sub-log', `error: ${err?.message ?? 'closed'}`),
               complete: () => log('sub-log', 'completed'),
@@ -455,6 +501,11 @@
         // The subscription is registered right after `connected`; give the server a beat to store it.
         await new Promise((r) => setTimeout(r, 300));
         $('disconnect').disabled = false;
+        if ($('live').checked) {
+          const { items, total } = await list.graphql();
+          renderNotes(items);
+          $('list-status').textContent = `${total} note(s). Live: changes from any tab or channel appear here.`;
+        }
       }
 
       function disconnectBoth() {
@@ -486,19 +537,93 @@
       };
 
       // ── 5. List ──────────────────────────────────────────────────────────────
-      function renderNotes(rows) {
-        const body = $('notes');
-        body.replaceChildren(
+      /** Rows currently shown, by id (for the pin / delete buttons). */
+      const shown = new Map();
+
+      function renderNotes(rows, changed = new Set()) {
+        shown.clear();
+        $('notes').replaceChildren(
           ...rows.map((n) => {
+            shown.set(n._id, n);
             const tr = document.createElement('tr');
-            for (const value of [n.title, n.createdDay, n.owner?.name ?? '—', n._id]) {
+            tr.dataset.id = n._id;
+            if (changed.has(n._id)) tr.className = 'flash';
+            for (const value of [
+              n.title,
+              n.pinned ? '✓' : '',
+              n.version ?? '',
+              n.createdDay,
+              n.owner?.name ?? '—',
+              n._id,
+            ]) {
               const td = document.createElement('td');
               td.textContent = value;
               tr.append(td);
             }
+            const actions = document.createElement('td');
+            actions.className = 'actions';
+            for (const [label, fn] of [
+              [n.pinned ? 'Unpin' : 'Pin', () => mutate.pin(n._id, !n.pinned)],
+              ['Delete', () => mutate.remove(n._id)],
+            ]) {
+              const button = document.createElement('button');
+              button.className = 'mini';
+              button.textContent = label;
+              button.onclick = guard('list-status', fn);
+              actions.append(button);
+            }
+            tr.append(actions);
             return tr;
           }),
         );
+      }
+
+      /**
+       * GraphQL mutations from the table. They do not touch the table: the change comes back over
+       * the subscription (to this tab and every other one signed in as the same person), which
+       * reloads it. That is the realtime path being shown.
+       */
+      const mutate = {
+        pin: async (id, pinned) => {
+          const note = shown.get(id);
+          const { errors } = await gql(
+            'mutation ($id: ID!, $input: UpdateNoteInput!) { updateNote(id: $id, input: $input) { _id pinned version } }',
+            { id, input: { pinned, expectedVersion: note.version } },
+          );
+          if (errors) throw new Error(errors[0].message);
+          $('list-status').textContent =
+            `${pinned ? 'Pinned' : 'Unpinned'} over GraphQL; waiting for the subscription…`;
+        },
+        remove: async (id) => {
+          const { errors } = await gql('mutation ($id: ID!) { deleteNote(id: $id) }', { id });
+          if (errors) throw new Error(errors[0].message);
+          $('list-status').textContent = 'Deleted over GraphQL; waiting for the subscription…';
+        },
+      };
+
+      /**
+       * Live table: every `noteChanged` event reloads the list over GraphQL. Events arriving within
+       * 150 ms are batched into one reload; the changed rows flash.
+       */
+      const pending = { ids: new Set(), actions: [], timer: null };
+      function liveRefresh(change) {
+        if (!$('live').checked || !state.token) return;
+        pending.ids.add(change.noteId);
+        pending.actions.push(change.action);
+        clearTimeout(pending.timer);
+        pending.timer = setTimeout(async () => {
+          const ids = new Set(pending.ids);
+          const actions = pending.actions.splice(0);
+          pending.ids.clear();
+          try {
+            const { items, total } = await list.graphql();
+            renderNotes(items, ids);
+            $('list-status').textContent =
+              `Updated live at ${time()} by the GraphQL subscription (${actions.join(', ')}): ${total} note(s).`;
+          } catch (err) {
+            $('list-status').textContent = `Live reload failed: ${err.message}`;
+          }
+        }, 150);
       }
       const list = {
         rest: async () => {
@@ -507,7 +632,7 @@
         },
         graphql: async () => {
           const { data, errors } = await gql(
-            '{ notes(limit: 50) { items { _id title createdDay owner { name } } meta { totalDocs } } }',
+            '{ notes(limit: 50) { items { _id title pinned version createdDay owner { name } } meta { totalDocs } } }',
           );
           if (errors) throw new Error(errors[0].message);
           return { items: data.notes.items, total: data.notes.meta.totalDocs };
@@ -634,6 +759,18 @@
           if (gqlErr?.extensions?.code !== 'NOTE_NOT_FOUND') throw new Error(`GraphQL: ${JSON.stringify(gqlErr)}`);
           if (socketErr?.error !== 'VALIDATION_FAILED') throw new Error(`Socket: ${JSON.stringify(socketErr)}`);
           return `REST ${restErr.errorCode}, GraphQL ${gqlErr.extensions.errorCode}, Socket ${socketErr.errorCode}`;
+        });
+        await check('Live table: pin and delete arrive through the GraphQL subscription', async () => {
+          $('live').checked = true;
+          const row = (id) => document.querySelector(`#notes tr[data-id="${id}"]`);
+          // The mutations never touch the table; only the subscription's reload can change it.
+          await mutate.pin(created[0], true);
+          await until(() => row(created[0])?.cells[1].textContent === '✓', 'the pinned row');
+          await mutate.remove(created[1]);
+          await until(() => !row(created[1]) && shown.size === 2, 'the deleted row to disappear');
+          const via = (action, id) => seen.subscription.some((c) => c.action === action && c.noteId === id);
+          if (!via('UPDATED', created[0]) || !via('DELETED', created[1])) throw new Error('events missing');
+          return 'pinned row flashed, deleted row gone';
         });
 
         const ok = results.every((r) => r.ok);

@@ -72,7 +72,9 @@ running). Pick processes with `pnpm dev api graphql socket`, or one with `pnpm d
 **Try every channel at once:** with `pnpm dev` (or `pnpm dev api graphql socket`) running, start
 `pnpm playground` and open http://localhost:5173. The page signs up over REST, listens on Socket.IO
 and a GraphQL subscription, creates notes over REST, GraphQL and Socket.IO, and shows the pushes
-arriving; **Run all checks** verifies the lot (12 checks).
+arriving. The **My notes** table is live: every `noteChanged` event on the GraphQL subscription
+reloads it and flashes the changed row (open two tabs signed in as the same person and pin or delete
+in one). **Run all checks** verifies the lot (13 checks).
 
 Local tools: Mailpit inbox http://localhost:8025, RabbitMQ console http://localhost:15672
 (guest/guest). With `OTP_DEV_LOG=true` (the default locally) one-time codes are

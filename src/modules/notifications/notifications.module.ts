@@ -20,6 +20,9 @@ import { NotifierService } from './notifier.service';
 import { DeviceToken, DeviceTokenSchema } from './schemas/device-token.schema';
 import { InboxItem, InboxItemSchema } from './schemas/inbox-item.schema';
 import { NotificationDelivery, NotificationDeliverySchema } from './schemas/notification-delivery.schema';
+import { WebPushSubscriptionRecord, WebPushSubscriptionSchema } from './schemas/web-push-subscription.schema';
+import { WebPushController, WebPushKeyController } from './web-push.controller';
+import { WebPushSubscriptionsService } from './web-push-subscriptions.service';
 
 const DAY_SECONDS = 86_400;
 
@@ -30,6 +33,7 @@ const DAY_SECONDS = 86_400;
     MongooseModule.forFeature([
       { name: DeviceToken.name, schema: DeviceTokenSchema },
       { name: NotificationDelivery.name, schema: NotificationDeliverySchema },
+      { name: WebPushSubscriptionRecord.name, schema: WebPushSubscriptionSchema },
     ]),
     MongooseModule.forFeatureAsync([
       {
@@ -50,16 +54,23 @@ const DAY_SECONDS = 86_400;
     DeviceRegistryService,
     NotifierService,
     InboxService,
+    WebPushSubscriptionsService,
     { provide: DeviceRegistry, useExisting: DeviceRegistryService },
     { provide: Notifier, useExisting: NotifierService },
   ],
-  exports: [DeviceRegistry, Notifier, DeviceRegistryService, InboxService, MongooseModule],
+  exports: [DeviceRegistry, Notifier, DeviceRegistryService, InboxService, WebPushSubscriptionsService, MongooseModule],
 })
 export class NotificationsCoreModule {}
 
 @Module({
   imports: [NotificationsCoreModule],
-  controllers: [NotificationsController, AdminNotificationsController, InternalNotificationsController],
+  controllers: [
+    NotificationsController,
+    WebPushKeyController,
+    WebPushController,
+    AdminNotificationsController,
+    InternalNotificationsController,
+  ],
 })
 export class NotificationsApiModule {}
 

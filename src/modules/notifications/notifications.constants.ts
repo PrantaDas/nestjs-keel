@@ -9,3 +9,6 @@ export const MAX_RECIPIENTS = 10_000;
 
 /** Deliveries left in `sending` this long belong to a crashed worker: closed as failed, never re-sent. */
 export const STALE_SENDING_MS = 15 * 60_000;
+
+/** Browsers one account keeps subscribed; registering one more drops the least recently seen. */
+export const MAX_WEB_PUSH_SUBSCRIPTIONS_PER_USER = 20;

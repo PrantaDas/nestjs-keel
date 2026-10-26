@@ -30,6 +30,7 @@ export class NotificationDelivery {
   @Prop({ type: String, default: null })
   claimToken: string | null;
 
+  /** Pushes accepted by the provider: app devices (FCM) and browsers (Web Push) together. */
   @Prop({ required: true, default: 0 })
   pushSent: number;
 

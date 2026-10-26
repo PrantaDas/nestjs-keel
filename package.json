@@ -75,6 +75,7 @@
     "postman:export": "pnpm openapi:export && node scripts/postman-export.mjs",
     "messages:export": "nest build && node --enable-source-maps dist/cli/messages-export.js",
     "graphql:schema": "nest build && node --enable-source-maps dist/cli/graphql-schema.js",
+    "webpush:keys": "web-push generate-vapid-keys",
     "proto:gen": "buf generate && prettier --write src/infra/transport/grpc/generated",
     "g:module": "node scripts/generate-module.mjs",
     "playground": "node tools/playground/serve.mjs",
@@ -153,7 +154,8 @@
     "rxjs": "7.8.2",
     "socket.io": "4.8.4",
     "stripe": "23.0.0",
-    "twilio": "6.2.0"
+    "twilio": "6.2.0",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "@bufbuild/buf": "1.73.0",
@@ -170,6 +172,7 @@
     "@types/node": "24.19.2",
     "@types/nodemailer": "8.0.2",
     "@types/supertest": "7.2.1",
+    "@types/web-push": "3.6.4",
     "eslint": "10.12.0",
     "eslint-config-prettier": "10.1.8",
     "globals": "17.13.0",

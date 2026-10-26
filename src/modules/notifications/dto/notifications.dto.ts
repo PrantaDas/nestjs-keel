@@ -1,16 +1,22 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
   ArrayUnique,
   IsArray,
+  IsDefined,
   IsIn,
+  IsInt,
   IsMongoId,
   IsOptional,
   IsString,
+  IsUrl,
   Matches,
   MaxLength,
+  Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import type { NotificationChannel } from '@/common/contracts/notifier.contract';
 import { ApiDateTimeProperty, ApiMapProperty, ApiObjectIdProperty } from '@/common/swagger';
@@ -108,4 +114,93 @@ export class QueuedResponse {
 export class TopicSentResponse {
   @ApiProperty({ type: String })
   messageId: string;
+}
+
+/** Base64url, as browsers encode `PushSubscription` keys (65-byte P-256 point, 16-byte secret). */
+const P256DH = /^[A-Za-z0-9_-]{87}=?$/;
+const AUTH_SECRET = /^[A-Za-z0-9_-]{22}(==)?$/;
+const SUBSCRIPTION_FORMAT = "Subscription details aren't in the right format.";
+
+export class WebPushKeysDto {
+  @ApiProperty({
+    description: "The browser's P-256 public key (base64url)",
+    example: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM',
+  })
+  @IsString()
+  @Matches(P256DH, { message: SUBSCRIPTION_FORMAT })
+  p256dh: string;
+
+  @ApiProperty({ description: "The browser's auth secret (base64url)", example: 'tBHItJI5svbpez7KI4CCXg' })
+  @IsString()
+  @Matches(AUTH_SECRET, { message: SUBSCRIPTION_FORMAT })
+  auth: string;
+}
+
+/** `PushSubscription.toJSON()` as the browser returns it, plus an optional label for my list. */
+export class WebPushSubscribeDto {
+  @ApiProperty({ maxLength: 2048, example: 'https://fcm.googleapis.com/fcm/send/dpH5lCsTSSM:APA91bH…' })
+  @IsUrl({ protocols: ['https'], require_protocol: true, require_tld: true })
+  @MaxLength(2048)
+  endpoint: string;
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    description: 'When the subscription stops working (Unix milliseconds); null = no end',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  expirationTime?: number | null;
+
+  @ApiProperty({ type: () => WebPushKeysDto })
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => WebPushKeysDto)
+  keys: WebPushKeysDto;
+
+  @ApiPropertyOptional({
+    maxLength: 100,
+    example: 'Firefox on Windows',
+    description: 'Shown in the list of my browsers',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  label?: string;
+}
+
+export class WebPushUnsubscribeDto {
+  @ApiProperty({ maxLength: 2048, description: 'The `endpoint` of the subscription being removed' })
+  @IsString()
+  @MaxLength(2048)
+  endpoint: string;
+}
+
+export class WebPushPublicKeyResponse {
+  @ApiProperty({
+    type: String,
+    description: 'VAPID public key (base64url): pass it as `applicationServerKey` to `pushManager.subscribe`',
+  })
+  publicKey: string;
+}
+
+export class WebPushSubscriptionResponse {
+  @ApiObjectIdProperty()
+  _id: string;
+
+  @ApiProperty({ type: String, nullable: true, example: 'Firefox on Windows' })
+  label: string | null;
+
+  @ApiProperty({ type: String, example: 'fcm.googleapis.com', description: 'Push service host' })
+  service: string;
+
+  @ApiDateTimeProperty({ nullable: true })
+  expiresAt: string | null;
+
+  @ApiDateTimeProperty()
+  lastSeenAt: string;
+
+  @ApiDateTimeProperty()
+  createdAt: string;
 }

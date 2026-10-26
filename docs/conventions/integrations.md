@@ -9,6 +9,7 @@ with one adapter. Feature code injects the port, never an SDK; tests bind a fake
 | `MailSender`     | `SmtpMailSender` (Nodemailer)                | `SMTP_HOST`              | `smtp`      |
 | `SmsSender`      | `TwilioSmsSender`                            | `TWILIO_ACCOUNT_SID`     | `twilio`    |
 | `PushSender`     | `FcmPushSender` (firebase-admin)             | `FIREBASE_CREDENTIALS_*` | `fcm`       |
+| `WebPushSender`  | `VapidWebPushSender` (web-push + `fetch`)    | `WEB_PUSH_VAPID_*`       | `webpush`   |
 | `PaymentGateway` | `StripePaymentGateway`                       | `STRIPE_SECRET_KEY`      | `stripe`    |
 
 ## Rules for an adapter
@@ -61,3 +62,66 @@ Feature modules never call `PushSender` or `MailSender` directly to reach a user
 `Notifier` port (`common/contracts/notifier.contract.ts`). The notifications module stores the inbox item,
 queues the delivery, resolves device tokens, skips unreachable (deactivated, deleted) accounts at
 enqueue **and** at send time, prunes tokens the provider reports dead, and dedupes per occurrence key.
+
+The `push` channel reaches both kinds of device: app installations (FCM device tokens, registered at
+sign-in or `PUT /users/me/device`) and browsers (Web Push subscriptions, below). `pushSent` /
+`pushFailed` on a delivery count both.
+
+## Browser push (Web Push)
+
+Standard Web Push with VAPID ([ADR 0016](../adr/0016-web-push-with-vapid.md)): no Firebase in the
+page, works in Chrome, Firefox, Edge and Safari.
+
+1. `pnpm webpush:keys` prints a key pair → `WEB_PUSH_VAPID_PUBLIC_KEY` / `WEB_PUSH_VAPID_PRIVATE_KEY`.
+   Set `WEB_PUSH_SUBJECT` to a real `mailto:` or `https:` contact. Keep the pair: new keys
+   invalidate every subscription.
+2. The page asks for permission, subscribes and sends the subscription to the API:
+
+| Route                                                     | Auth   | Does                                              |
+| --------------------------------------------------------- | ------ | ------------------------------------------------- |
+| `GET /api/v1/notifications/web-push/public-key`           | public | `{ publicKey }` for `applicationServerKey`        |
+| `PUT /api/v1/notifications/web-push/subscriptions`        | bearer | Register or refresh this browser (upsert)         |
+| `GET /api/v1/notifications/web-push/subscriptions`        | bearer | My browsers (label, push service host, last seen) |
+| `DELETE /api/v1/notifications/web-push/subscriptions/:id` | bearer | Remove one of my browsers                         |
+| `POST /api/v1/notifications/web-push/unsubscribe`         | bearer | `{ endpoint }`: this browser unsubscribed itself  |
+| `POST /api/v1/notifications/web-push/test`                | bearer | A test push to my browsers and devices            |
+
+```js
+// page
+const { data } = await (await fetch('/api/v1/notifications/web-push/public-key')).json();
+const registration = await navigator.serviceWorker.register('/sw.js');
+if ((await Notification.requestPermission()) !== 'granted') return;
+const subscription = await registration.pushManager.subscribe({
+  userVisibleOnly: true,
+  applicationServerKey: data.publicKey, // base64url string, accepted by every current browser
+});
+await fetch('/api/v1/notifications/web-push/subscriptions', {
+  method: 'PUT',
+  headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
+  body: JSON.stringify({ ...subscription.toJSON(), label: 'Firefox on Linux' }),
+});
+
+// sw.js: the payload is { title, body?, image?, url?, data? }
+self.addEventListener('push', (event) => {
+  const { title, body, image, url, data } = event.data.json();
+  event.waitUntil(self.registration.showNotification(title, { body, image, data: { url, ...data } }));
+});
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow(event.notification.data.url ?? '/'));
+});
+```
+
+Rules the module keeps:
+
+- **Allowlisted push services only.** The server POSTs to the subscription URL, so it must be https
+  on port 443 at a host in `WEB_PUSH_ALLOWED_HOSTS` (default: Chrome/FCM, Mozilla, Apple, Windows),
+  checked at registration (400, code 4002) and again before every send; redirects are refused.
+- **The URL is a secret.** Anyone holding it (plus the keys) can push to that browser: responses
+  only show the push service host.
+- **Same lifecycle as device tokens.** Signing the session out, deactivation and deletion remove the
+  subscriptions; 404 / 410 from the push service delete them; an account keeps its 20 most recently
+  seen browsers.
+- **Per-browser failures are outcomes, not job failures.** Deliveries are claimed like every other
+  push, so a failed browser is counted in `pushFailed` and never re-sent. The payload is capped at
+  3800 bytes (`data.url` becomes the click target).

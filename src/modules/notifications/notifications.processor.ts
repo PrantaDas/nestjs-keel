@@ -9,10 +9,12 @@ import { BaseProcessor } from '@/infra/queue/base.processor';
 import { QueueName } from '@/infra/queue/queue.constants';
 import { MailSender } from '@/integrations/mail/mail.port';
 import { PUSH_MAX_BATCH, PushSender, PushTokenMessage } from '@/integrations/push/push.port';
+import { WebPushSender } from '@/integrations/push/web-push.port';
 import { DeviceRegistryService } from './device-registry.service';
 import type { NotificationJob } from './notifier.service';
 import { InboxItem } from './schemas/inbox-item.schema';
 import { NotificationDelivery } from './schemas/notification-delivery.schema';
+import { WebPushSubscriptionsService } from './web-push-subscriptions.service';
 
 interface PushTally {
   sent: number;
@@ -29,8 +31,9 @@ const notConfigured = (error: unknown) =>
  *    duplicate job already claimed are never touched again, so a retry cannot push twice.
  * 2. Checks again who may be contacted (an account may have been deactivated since it was queued):
  *    the others are marked `skipped` and get nothing: no inbox row, no push, no e-mail.
- * 3. Writes inbox rows, sends pushes in batches (dead tokens are deleted), sends e-mails (claimed
- *    per person), then records the outcome. A provider failure marks the rows failed; never re-sent.
+ * 3. Writes inbox rows, sends pushes to app devices (FCM, in batches) and browsers (Web Push), deletes
+ *    dead tokens and expired subscriptions, sends e-mails (claimed per person), then records the
+ *    outcome. A provider failure marks the rows failed; never re-sent.
  */
 @Processor(QueueName.NOTIFICATIONS)
 export class NotificationsProcessor extends BaseProcessor<NotificationJob> {
@@ -40,6 +43,8 @@ export class NotificationsProcessor extends BaseProcessor<NotificationJob> {
     private readonly directory: UserDirectory,
     private readonly devices: DeviceRegistryService,
     private readonly push: PushSender,
+    private readonly browsers: WebPushSubscriptionsService,
+    private readonly webPush: WebPushSender,
     private readonly mail: MailSender,
     private readonly time: TimeService,
   ) {
@@ -116,9 +121,21 @@ export class NotificationsProcessor extends BaseProcessor<NotificationJob> {
     );
   }
 
+  /** App devices and browsers of these people; the tally counts both. */
   private async sendPushes(job: NotificationJob, people: ReachableUser[]): Promise<Map<string, PushTally>> {
     const tally = new Map<string, PushTally>();
-    const tokens = await this.devices.tokensFor(people.map((person) => new Types.ObjectId(person.id)));
+    const userIds = people.map((person) => new Types.ObjectId(person.id));
+    await this.sendDevicePushes(job, userIds, tally);
+    await this.sendBrowserPushes(job, userIds, tally);
+    return tally;
+  }
+
+  private async sendDevicePushes(
+    job: NotificationJob,
+    userIds: Types.ObjectId[],
+    tally: Map<string, PushTally>,
+  ): Promise<void> {
+    const tokens = await this.devices.tokensFor(userIds);
     const messages: Array<PushTokenMessage & { userId: string }> = tokens.map((row) => ({
       userId: row.userId.toHexString(),
       token: row.token,
@@ -134,20 +151,48 @@ export class NotificationsProcessor extends BaseProcessor<NotificationJob> {
         outcomes = await this.push.sendEach(batch.map(({ userId: _userId, ...message }) => message));
       } catch (error) {
         // Push not set up: the inbox (and e-mail) still deliver; nothing to retry.
-        if (notConfigured(error)) return tally;
+        if (notConfigured(error)) return;
         throw error;
       }
       outcomes.forEach((outcome, index) => {
         const { userId, token } = batch[index];
-        const entry = tally.get(userId) ?? { sent: 0, failed: 0 };
-        if (outcome.ok) entry.sent += 1;
-        else entry.failed += 1;
+        count(tally, userId, outcome.ok);
         if (outcome.invalidToken) dead.push(token);
-        tally.set(userId, entry);
       });
     }
     await this.devices.prune(dead);
-    return tally;
+  }
+
+  /** Per-browser failures come back as outcomes, so one bad subscription never fails the job. */
+  private async sendBrowserPushes(
+    job: NotificationJob,
+    userIds: Types.ObjectId[],
+    tally: Map<string, PushTally>,
+  ): Promise<void> {
+    const subscriptions = await this.browsers.forUsers(userIds);
+    if (!subscriptions.length) return;
+    let outcomes;
+    try {
+      outcomes = await this.webPush.sendEach(
+        subscriptions.map((row) => ({
+          subscription: { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+          title: job.title,
+          body: job.body,
+          data: job.data,
+          url: job.data?.url,
+        })),
+      );
+    } catch (error) {
+      if (notConfigured(error)) return;
+      throw error;
+    }
+    const expired: string[] = [];
+    outcomes.forEach((outcome, index) => {
+      const row = subscriptions[index];
+      count(tally, row.userId.toHexString(), outcome.ok);
+      if (outcome.expired) expired.push(row.endpoint);
+    });
+    await this.browsers.prune(expired);
   }
 
   private async sendEmails(job: NotificationJob, people: ReachableUser[]): Promise<void> {
@@ -170,6 +215,13 @@ export class NotificationsProcessor extends BaseProcessor<NotificationJob> {
       }
     }
   }
+}
+
+function count(tally: Map<string, PushTally>, userId: string, ok: boolean): void {
+  const entry = tally.get(userId) ?? { sent: 0, failed: 0 };
+  if (ok) entry.sent += 1;
+  else entry.failed += 1;
+  tally.set(userId, entry);
 }
 
 function escapeHtml(text: string): string {

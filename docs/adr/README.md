@@ -19,5 +19,6 @@ Each record says what was decided, why, and what it costs. Add one when a decisi
 | [0013](0013-otp-delivery-through-a-queue.md)       | One-time codes are delivered through a queue                      |
 | [0014](0014-seaweedfs-local-s3.md)                 | SeaweedFS for local S3                                            |
 | [0015](0015-ci-with-docker-compose.md)             | CI uses docker compose instead of service containers              |
+| [0016](0016-web-push-with-vapid.md)                | Browser push with Web Push and VAPID                              |
 
 Template: copy the newest record, keep the headings (Context, Decision, Consequences).

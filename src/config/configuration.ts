@@ -160,6 +160,14 @@ export const integrationsConfig = registerAs('integrations', () => ({
     credentialsJson: env('FIREBASE_CREDENTIALS_JSON'),
     credentialsFile: env('FIREBASE_CREDENTIALS_FILE'),
   },
+  webPush: {
+    publicKey: env('WEB_PUSH_VAPID_PUBLIC_KEY'),
+    privateKey: env('WEB_PUSH_VAPID_PRIVATE_KEY'),
+    subject: env('WEB_PUSH_SUBJECT'),
+    ttlSeconds: num('WEB_PUSH_TTL_SECONDS'),
+    /** Push service hosts (or parent domains) a subscription may point at. */
+    allowedHosts: list('WEB_PUSH_ALLOWED_HOSTS').map((host) => host.toLowerCase()),
+  },
 }));
 
 export const stripeConfig = registerAs('stripe', () => ({
@@ -213,6 +221,7 @@ export const resilienceConfig = registerAs('resilience', () => ({
   timeouts: {
     http: num('INTEGRATION_HTTP_TIMEOUT_MS'),
     fcm: num('FCM_TIMEOUT_MS'),
+    webpush: num('WEB_PUSH_TIMEOUT_MS'),
     smtp: num('SMTP_TIMEOUT_MS'),
     s3: num('S3_TIMEOUT_MS'),
     twilio: num('TWILIO_TIMEOUT_MS'),

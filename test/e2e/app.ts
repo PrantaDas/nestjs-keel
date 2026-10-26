@@ -9,6 +9,7 @@ import { configureHttpApp } from '@/bootstrap/http-app';
 import { Clock } from '@/common/time/clock';
 import { MailSender } from '@/integrations/mail/mail.port';
 import { PushSender } from '@/integrations/push/push.port';
+import { WebPushSender } from '@/integrations/push/web-push.port';
 import { SmsSender } from '@/integrations/sms/sms.port';
 import { FileStorage } from '@/integrations/storage/storage.port';
 import { PaymentGateway } from '@/integrations/stripe/payment-gateway.port';
@@ -47,6 +48,8 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
     .useValue(fakes.sms)
     .overrideProvider(PushSender)
     .useValue(fakes.push)
+    .overrideProvider(WebPushSender)
+    .useValue(fakes.webPush)
     .overrideProvider(FileStorage)
     .useValue(fakes.storage)
     .overrideProvider(PaymentGateway)

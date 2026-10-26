@@ -117,12 +117,14 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | 3020 | `DELETION_NOT_PENDING` | 409 | App | There is no pending account deletion to cancel. |
 | 3021 | `ACCOUNT_DELETION_PENDING` | 409 | App | This account is already scheduled for deletion. |
 
-### Notifications (4000–4001)
+### Notifications (4000–4003)
 
 | Code | Key | HTTP | Who sees it | Message |
 | --- | --- | --- | --- | --- |
 | 4000 | `INBOX_ITEM_NOT_FOUND` | 404 | App | We couldn't find that notification. |
 | 4001 | `TOO_MANY_RECIPIENTS` | 400 | App + admin | Send to at most 10,000 people at once, or use a topic. |
+| 4002 | `WEB_PUSH_SERVICE_NOT_SUPPORTED` | 400 | App | This browser's notification service isn't supported. |
+| 4003 | `WEB_PUSH_SUBSCRIPTION_NOT_FOUND` | 404 | App | We couldn't find that browser. |
 
 ### Notes (5000–5004)
 
@@ -183,7 +185,7 @@ When two requests save the same unique value at the same moment, the second gets
 
 ## Success messages
 
-### App (53 routes)
+### App (59 routes)
 
 | Method | Route | Message |
 | --- | --- | --- |
@@ -214,6 +216,12 @@ When two requests save the same unique value at the same moment, the second gets
 | POST | `/api/v1/notifications/{id}/read` | Marked as read. |
 | POST | `/api/v1/notifications/read-all` | All notifications marked as read. |
 | GET | `/api/v1/notifications/unread-count` | Unread count loaded. |
+| GET | `/api/v1/notifications/web-push/public-key` | Browser notification settings loaded. |
+| GET | `/api/v1/notifications/web-push/subscriptions` | Browsers loaded. |
+| PUT | `/api/v1/notifications/web-push/subscriptions` | This browser will now receive notifications. |
+| DELETE | `/api/v1/notifications/web-push/subscriptions/{id}` | — (no content (204)) |
+| POST | `/api/v1/notifications/web-push/test` | Test notification on its way. |
+| POST | `/api/v1/notifications/web-push/unsubscribe` | This browser will no longer receive notifications. |
 | POST | `/api/v1/payments/checkout` | Checkout ready. |
 | GET | `/api/v1/payments/me` | Billing loaded. |
 | POST | `/api/v1/payments/payment-intents` | Payment ready. |

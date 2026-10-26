@@ -7,10 +7,12 @@ import { TimeService } from '@/common/time/time.service';
 import { PushSender } from '@/integrations/push/push.port';
 import { TOPIC_ALL } from './notifications.constants';
 import { DeviceToken } from './schemas/device-token.schema';
+import { WebPushSubscriptionsService } from './web-push-subscriptions.service';
 
 /**
  * Push tokens per account (`DeviceRegistry` port, used by identity at sign-in and sign-out). A token
  * that FCM reports dead is deleted by the sender; tokens of deactivated accounts leave every topic.
+ * Browser (Web Push) subscriptions go with them: same session and account lifecycle.
  */
 @Injectable()
 export class DeviceRegistryService extends DeviceRegistry {
@@ -19,6 +21,7 @@ export class DeviceRegistryService extends DeviceRegistry {
   constructor(
     @InjectModel(DeviceToken.name) private readonly tokens: Model<DeviceToken>,
     private readonly push: PushSender,
+    private readonly browsers: WebPushSubscriptionsService,
     private readonly time: TimeService,
   ) {
     super();
@@ -53,6 +56,7 @@ export class DeviceRegistryService extends DeviceRegistry {
 
   async removeForSessions(userId: string, sessionIds: readonly string[]): Promise<void> {
     if (!sessionIds.length) return;
+    await this.browsers.removeForSessions(userId, sessionIds);
     await this.removeWhere({ userId: new Types.ObjectId(userId), sessionId: { $in: [...sessionIds] } });
   }
 
@@ -62,6 +66,7 @@ export class DeviceRegistryService extends DeviceRegistry {
    * retried, because a token deleted while still subscribed would keep receiving broadcasts.
    */
   async removeAllForUser(userId: string): Promise<void> {
+    await this.browsers.removeForUser(userId);
     await this.removeWhere({ userId: new Types.ObjectId(userId) }, { strict: true });
   }
 

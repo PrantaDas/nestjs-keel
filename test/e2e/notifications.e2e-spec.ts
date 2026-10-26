@@ -97,6 +97,136 @@ describe('Notifications (e2e)', () => {
     });
   });
 
+  describe('browser push (Web Push)', () => {
+    const keys = { p256dh: `B${'a'.repeat(86)}`, auth: 'b'.repeat(22) };
+    const subscription = (id: string) => ({
+      endpoint: `https://push.e2e.test/${id}`,
+      expirationTime: null,
+      keys,
+      label: 'Firefox on Linux',
+    });
+    const subscriptions = () => t.app.get<Connection>(getConnectionToken()).collection('web_push_subscriptions');
+
+    it('serves the public key without sign-in', async () => {
+      const res = await t.http.get(`${API}/notifications/web-push/public-key`).expect(200);
+      expect(res.body.data.publicKey).toBe(t.fakes.webPush.publicKey());
+    });
+
+    it('registers a browser once, lists it without its address, and delivers to it', async () => {
+      const me = await signUp(t.http);
+      const first = await t.http
+        .put(`${API}/notifications/web-push/subscriptions`)
+        .set(me.auth)
+        .send(subscription('once'))
+        .expect(200);
+      expect(first.body.data).toMatchObject({ label: 'Firefox on Linux', service: 'push.e2e.test', expiresAt: null });
+      expect(first.body.data).not.toHaveProperty('endpoint');
+      await t.http
+        .put(`${API}/notifications/web-push/subscriptions`)
+        .set(me.auth)
+        .send(subscription('once'))
+        .expect(200);
+      const list = await t.http.get(`${API}/notifications/web-push/subscriptions`).set(me.auth).expect(200);
+      expect(list.body.data).toHaveLength(1);
+
+      await notify([me.userId], 'occ-web');
+      await eventually(async () => (await deliveries.findOne({ occurrenceKey: 'occ-web', status: 'sent' })) !== null);
+      expect(t.fakes.webPush.sentTo('https://push.e2e.test/once')).toEqual([
+        expect.objectContaining({
+          title: 'Hello',
+          body: 'From the test',
+          subscription: expect.objectContaining({ keys }),
+        }),
+      ]);
+      expect(await deliveries.findOne({ occurrenceKey: 'occ-web' })).toMatchObject({ pushSent: 1, pushFailed: 0 });
+    });
+
+    it('refuses push services off the list and malformed subscriptions', async () => {
+      const me = await signUp(t.http);
+      const refused = await t.http
+        .put(`${API}/notifications/web-push/subscriptions`)
+        .set(me.auth)
+        .send({ ...subscription('x'), endpoint: 'https://attacker.example/hook' })
+        .expect(400);
+      expect(refused.body.errorCode).toBe(4002);
+      await t.http
+        .put(`${API}/notifications/web-push/subscriptions`)
+        .set(me.auth)
+        .send({ ...subscription('y'), keys: { p256dh: 'short', auth: 'short' } })
+        .expect(400);
+      await t.http
+        .put(`${API}/notifications/web-push/subscriptions`)
+        .set(me.auth)
+        .send({ ...subscription('z'), endpoint: 'http://push.e2e.test/z' })
+        .expect(400);
+    });
+
+    it('drops a subscription the push service reports gone', async () => {
+      const me = await signUp(t.http);
+      await t.http.put(`${API}/notifications/web-push/subscriptions`).set(me.auth).send(subscription('gone'));
+      t.fakes.webPush.gone.add('https://push.e2e.test/gone');
+      await notify([me.userId], 'occ-web-gone');
+      await eventually(
+        async () => (await subscriptions().countDocuments({ endpoint: 'https://push.e2e.test/gone' })) === 0,
+      );
+    });
+
+    it("removes my browsers, never someone else's, and forgets them at sign-out", async () => {
+      const me = await signUp(t.http);
+      const other = await signUp(t.http);
+      const mine = await t.http
+        .put(`${API}/notifications/web-push/subscriptions`)
+        .set(me.auth)
+        .send(subscription('mine'))
+        .expect(200);
+      await t.http
+        .delete(`${API}/notifications/web-push/subscriptions/${mine.body.data._id}`)
+        .set(other.auth)
+        .expect(404);
+      await t.http.delete(`${API}/notifications/web-push/subscriptions/${mine.body.data._id}`).set(me.auth).expect(204);
+
+      await t.http
+        .put(`${API}/notifications/web-push/subscriptions`)
+        .set(me.auth)
+        .send(subscription('self'))
+        .expect(200);
+      await t.http
+        .post(`${API}/notifications/web-push/unsubscribe`)
+        .set(other.auth)
+        .send({ endpoint: 'https://push.e2e.test/self' })
+        .expect(200);
+      expect(await subscriptions().countDocuments({ endpoint: 'https://push.e2e.test/self' })).toBe(1);
+      await t.http
+        .post(`${API}/notifications/web-push/unsubscribe`)
+        .set(me.auth)
+        .send({ endpoint: 'https://push.e2e.test/self' })
+        .expect(200);
+      expect(await subscriptions().countDocuments({ endpoint: 'https://push.e2e.test/self' })).toBe(0);
+
+      await t.http
+        .put(`${API}/notifications/web-push/subscriptions`)
+        .set(me.auth)
+        .send(subscription('session'))
+        .expect(200);
+      await t.http.post(`${API}/auth/logout`).set(me.auth).expect(200);
+      expect(await subscriptions().countDocuments({ endpoint: 'https://push.e2e.test/session' })).toBe(0);
+    });
+
+    it('sends a test notification to my own browsers', async () => {
+      const me = await signUp(t.http);
+      await t.http
+        .put(`${API}/notifications/web-push/subscriptions`)
+        .set(me.auth)
+        .send(subscription('test'))
+        .expect(200);
+      const res = await t.http.post(`${API}/notifications/web-push/test`).set(me.auth).expect(202);
+      expect(res.body.data).toEqual({ queued: 1 });
+      await eventually(async () => t.fakes.webPush.sentTo('https://push.e2e.test/test').length === 1);
+      const inbox = await t.http.get(`${API}/notifications`).set(me.auth).expect(200);
+      expect(inbox.body.data).toEqual([]);
+    });
+  });
+
   it('lets staff notify accounts and push to a topic (audited)', async () => {
     const admin = await staffAccount(t.app, t.http, Role.ADMIN);
     const me = await signUp(t.http, { device: device('token-admin') });

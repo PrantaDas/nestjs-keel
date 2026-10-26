@@ -5,6 +5,8 @@ import { MailSender } from './mail/mail.port';
 import { SmtpMailSender } from './mail/smtp-mail.sender';
 import { FcmPushSender } from './push/fcm-push.sender';
 import { PushSender } from './push/push.port';
+import { VapidWebPushSender } from './push/vapid-web-push.sender';
+import { WebPushSender } from './push/web-push.port';
 import { CircuitBreakerRegistry, integrationBreakers } from './resilience/circuit-breaker';
 import { SendOnceGuard } from './resilience/send-once';
 import { breakerSettingsFrom, setDefaultHttpTimeoutMs, timeoutsFrom } from './resilience/settings';
@@ -37,7 +39,8 @@ import { FileStorage } from './storage/storage.port';
     { provide: MailSender, useClass: SmtpMailSender },
     { provide: SmsSender, useClass: TwilioSmsSender },
     { provide: PushSender, useClass: FcmPushSender },
+    { provide: WebPushSender, useClass: VapidWebPushSender },
   ],
-  exports: [CircuitBreakerRegistry, SendOnceGuard, FileStorage, MailSender, SmsSender, PushSender],
+  exports: [CircuitBreakerRegistry, SendOnceGuard, FileStorage, MailSender, SmsSender, PushSender, WebPushSender],
 })
 export class IntegrationsModule {}

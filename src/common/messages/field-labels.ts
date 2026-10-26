@@ -21,6 +21,9 @@ export const FIELD_LABELS: Readonly<Record<string, string>> = Object.freeze({
   uploadKey: 'Uploaded file',
   imageKey: 'Image',
   pushToken: 'Notification token',
+  endpoint: 'Subscription address',
+  expirationTime: 'Expiry time',
+  p256dh: 'Subscription details',
   deviceId: 'Device',
   appVersion: 'App version',
   osVersion: 'System version',
@@ -37,6 +40,8 @@ export const FIELD_LABELS: Readonly<Record<string, string>> = Object.freeze({
   remindAt: 'Reminder time',
   // Same property name, different meaning: `Dto.property` wins over the plain name.
   // 'ExportRangeDto.from': 'Export start date',
+  'WebPushKeysDto.auth': 'Subscription details',
+  'WebPushSubscribeDto.keys': 'Subscription details',
 });
 
 /** Word-level replacements applied to derived labels (lower-case keys). */

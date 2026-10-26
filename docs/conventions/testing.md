@@ -32,7 +32,7 @@ await eventually(async () => t.fakes.push.sentTo('token-1').length === 1); // as
 ```
 
 - `createTestApp` boots `ApiModule` (or `module:`) plus extra modules (worker processors, crons)
-  with every provider replaced by a fake from `test/e2e/fakes.ts` (`t.fakes.mail`, `sms`, `push`,
+  with every provider replaced by a fake from `test/e2e/fakes.ts` (`t.fakes.mail`, `sms`, `push`, `webPush`,
   `storage`, `payments`), and an optional clock.
 - **Isolation:** each run and each Jest worker gets its own database (`app_e2e_w2`) and Redis key
   prefix; `E2E_ID=<name>` adds a suffix so two checkouts can run at once. `setup-env.ts` refuses a

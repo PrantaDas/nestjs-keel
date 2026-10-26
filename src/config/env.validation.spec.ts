@@ -40,6 +40,22 @@ describe('environment validation', () => {
     expect(validate({ ...base, LISTEN_HOST: 'my-host' }).error?.message).toMatch(/LISTEN_HOST/);
   });
 
+  it('takes browser push keys as a pair, and only push services from the list', () => {
+    const publicKey = 'B'.repeat(87);
+    const privateKey = 'p'.repeat(43);
+    expect(validate(base).value).toMatchObject({ WEB_PUSH_VAPID_PUBLIC_KEY: '', WEB_PUSH_VAPID_PRIVATE_KEY: '' });
+    expect(
+      validate({ ...base, WEB_PUSH_VAPID_PUBLIC_KEY: publicKey, WEB_PUSH_VAPID_PRIVATE_KEY: privateKey }).error,
+    ).toBeUndefined();
+    expect(validate({ ...base, WEB_PUSH_VAPID_PUBLIC_KEY: publicKey }).error?.message).toMatch(/are set together/);
+    expect(validate({ ...base, WEB_PUSH_VAPID_PRIVATE_KEY: privateKey }).error?.message).toMatch(/are set together/);
+    expect(
+      validate({ ...base, WEB_PUSH_VAPID_PUBLIC_KEY: 'short', WEB_PUSH_VAPID_PRIVATE_KEY: privateKey }).error?.message,
+    ).toMatch(/base64url VAPID public key/);
+    expect(validate({ ...base, WEB_PUSH_SUBJECT: 'admin@example.com' }).error?.message).toMatch(/WEB_PUSH_SUBJECT/);
+    expect(validate({ ...base, WEB_PUSH_SUBJECT: 'https://example.com/contact' }).error).toBeUndefined();
+  });
+
   it('rejects offset-style business time zones', () => {
     const { error } = validate({ ...base, BUSINESS_TIMEZONE: '+04:00' });
     expect(error?.message).toMatch(/IANA time zone name/);

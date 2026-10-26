@@ -195,6 +195,34 @@ export const envValidationSchema = Joi.object({
   FIREBASE_CREDENTIALS_JSON: optionalString,
   FIREBASE_CREDENTIALS_FILE: optionalString,
 
+  // ── Web Push: VAPID (empty keys = browser push not configured) ──
+  // `pnpm webpush:keys` prints a pair. Base64url, as the browser's applicationServerKey expects.
+  WEB_PUSH_VAPID_PUBLIC_KEY: Joi.string()
+    .pattern(/^[A-Za-z0-9_-]{87}$/)
+    .allow('')
+    .default('')
+    .messages({
+      'string.pattern.base': '"WEB_PUSH_VAPID_PUBLIC_KEY" must be a base64url VAPID public key (87 characters)',
+    }),
+  WEB_PUSH_VAPID_PRIVATE_KEY: Joi.string()
+    .pattern(/^[A-Za-z0-9_-]{43}$/)
+    .allow('')
+    .default('')
+    .messages({
+      'string.pattern.base': '"WEB_PUSH_VAPID_PRIVATE_KEY" must be a base64url VAPID private key (43 characters)',
+    }),
+  // Contact push services use when something goes wrong: a mailto: address or an https: URL.
+  WEB_PUSH_SUBJECT: Joi.string()
+    .pattern(/^(mailto:[^\s@]+@[^\s@]+|https:\/\/\S+)$/)
+    .default('mailto:no-reply@example.com'),
+  // How long a push service keeps a message for an offline browser.
+  WEB_PUSH_TTL_SECONDS: Joi.number().integer().min(0).max(2_419_200).default(86_400),
+  // Push services the API will deliver to (host or parent domain). Subscriptions elsewhere are refused:
+  // the server POSTs to the subscription URL, so an open list would let anyone aim it at any host.
+  WEB_PUSH_ALLOWED_HOSTS: Joi.string()
+    .pattern(/^\s*[a-z0-9.-]+\s*(,\s*[a-z0-9.-]+\s*)*$/i)
+    .default('fcm.googleapis.com,push.services.mozilla.com,push.apple.com,notify.windows.com'),
+
   // ── Payments: Stripe (empty key = payments not configured) ──
   STRIPE_SECRET_KEY: optionalString,
   STRIPE_WEBHOOK_SECRET: optionalString,
@@ -231,13 +259,14 @@ export const envValidationSchema = Joi.object({
   INTEGRATION_BREAKER_ENABLED: Joi.boolean().default(true),
   INTEGRATION_BREAKER_FAILURE_THRESHOLD: Joi.number().integer().min(1).max(1000).default(5),
   INTEGRATION_BREAKER_OPEN_SECONDS: Joi.number().integer().min(1).max(3600).default(30),
-  // `name=threshold/openSeconds` per integration (s3, smtp, twilio, fcm, stripe), e.g. fcm=10/60.
+  // `name=threshold/openSeconds` per integration (s3, smtp, twilio, fcm, webpush, stripe), e.g. fcm=10/60.
   INTEGRATION_BREAKER_OVERRIDES: Joi.string()
     .pattern(/^\s*[a-z0-9-]+\s*=\s*\d+\s*\/\s*\d+\s*(,\s*[a-z0-9-]+\s*=\s*\d+\s*\/\s*\d+\s*)*$/i)
     .allow('')
     .default(''),
   INTEGRATION_HTTP_TIMEOUT_MS: ms(500, 120_000, 10_000),
   FCM_TIMEOUT_MS: ms(1000, 300_000, 30_000),
+  WEB_PUSH_TIMEOUT_MS: ms(1000, 120_000, 10_000),
   SMTP_TIMEOUT_MS: ms(1000, 300_000, 20_000),
   S3_TIMEOUT_MS: ms(1000, 300_000, 30_000),
   TWILIO_TIMEOUT_MS: ms(1000, 120_000, 15_000),
@@ -258,4 +287,10 @@ export const envValidationSchema = Joi.object({
   REDIS_COMMAND_TIMEOUT_MS: ms(100, 60_000, 3000),
   REDIS_MAX_RETRIES_PER_REQUEST: Joi.number().integer().min(0).max(20).default(2),
   REDIS_CACHE_COMMAND_TIMEOUT_MS: ms(50, 10_000, 500),
+}).custom((env: Record<string, unknown>) => {
+  // One VAPID key without the other is a half-pasted pair, not "browser push off".
+  if (Boolean(env.WEB_PUSH_VAPID_PUBLIC_KEY) !== Boolean(env.WEB_PUSH_VAPID_PRIVATE_KEY)) {
+    throw new Error('"WEB_PUSH_VAPID_PUBLIC_KEY" and "WEB_PUSH_VAPID_PRIVATE_KEY" are set together');
+  }
+  return env;
 });

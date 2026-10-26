@@ -7,6 +7,7 @@ import {
   PushTokenMessage,
   TopicMembershipResult,
 } from '@/integrations/push/push.port';
+import { WebPushDelivery, WebPushOutcome, WebPushSender } from '@/integrations/push/web-push.port';
 import { SmsMessage, SmsSender } from '@/integrations/sms/sms.port';
 import { FileStorage, ObjectMetadata, PresignedUpload, UploadInput } from '@/integrations/storage/storage.port';
 import { CheckoutInput, GatewayPrice, NewProduct, PaymentGateway } from '@/integrations/stripe/payment-gateway.port';
@@ -76,6 +77,38 @@ export class FakePush extends PushSender {
 
   sentTo(token: string): PushTokenMessage[] {
     return this.sent.filter((m) => m.token === token);
+  }
+}
+
+/**
+ * Web Push stand-in: configured, accepts `https://push.e2e.test/…` only, and every delivery
+ * succeeds unless its subscription URL is listed in `gone` (then answered 410).
+ */
+export class FakeWebPush extends WebPushSender {
+  readonly sent: WebPushDelivery[] = [];
+  readonly gone = new Set<string>();
+
+  publicKey(): string {
+    return 'BFakeVapidPublicKeyForE2eTestsOnly0000000000000000000000000000000000000000000000000000';
+  }
+
+  acceptsEndpoint(endpoint: string): boolean {
+    return endpoint.startsWith('https://push.e2e.test/');
+  }
+
+  sendEach(deliveries: readonly WebPushDelivery[]): Promise<WebPushOutcome[]> {
+    this.sent.push(...deliveries);
+    return Promise.resolve(
+      deliveries.map((d) =>
+        this.gone.has(d.subscription.endpoint)
+          ? { ok: false, errorCode: 'http_410', expired: true }
+          : { ok: true, errorCode: null, expired: false },
+      ),
+    );
+  }
+
+  sentTo(endpoint: string): WebPushDelivery[] {
+    return this.sent.filter((d) => d.subscription.endpoint === endpoint);
   }
 }
 
@@ -202,6 +235,7 @@ export interface Fakes {
   mail: FakeMail;
   sms: FakeSms;
   push: FakePush;
+  webPush: FakeWebPush;
   storage: FakeStorage;
   payments: FakePaymentGateway;
 }
@@ -210,6 +244,7 @@ export const createFakes = (): Fakes => ({
   mail: new FakeMail(),
   sms: new FakeSms(),
   push: new FakePush(),
+  webPush: new FakeWebPush(),
   storage: new FakeStorage(),
   payments: new FakePaymentGateway(),
 });

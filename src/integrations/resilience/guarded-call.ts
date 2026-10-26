@@ -8,6 +8,7 @@ import { toIntegrationError } from './failure';
  */
 export const INTEGRATION_KEYS: Readonly<Record<string, string>> = Object.freeze({
   'Firebase Cloud Messaging': 'fcm',
+  'Web Push': 'webpush',
   'AWS S3': 's3',
   SMTP: 'smtp',
   'Twilio SMS': 'twilio',

@@ -66,7 +66,7 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | --- | --- | --- | --- | --- |
 | 1100 | `SESSION_REVOKED` | 401 | App + admin | Your session has ended. Please sign in again. |
 | 1101 | `ACCOUNT_DISABLED` | 401 | App + admin | This account is disabled. Please contact support. |
-| 1102 | `INVALID_API_KEY` | 401 | Internal | The service credentials are missing or not valid. |
+| 1102 | `INVALID_API_KEY` | 401 | App | The service credentials are missing or not valid. |
 
 ### Requests and validation (2000–2016)
 
@@ -122,7 +122,7 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | Code | Key | HTTP | Who sees it | Message |
 | --- | --- | --- | --- | --- |
 | 4000 | `INBOX_ITEM_NOT_FOUND` | 404 | App | We couldn't find that notification. |
-| 4001 | `TOO_MANY_RECIPIENTS` | 400 | Admin | Send to at most 10,000 people at once, or use a topic. |
+| 4001 | `TOO_MANY_RECIPIENTS` | 400 | App + admin | Send to at most 10,000 people at once, or use a topic. |
 
 ### Notes (5000–5004)
 
@@ -183,7 +183,7 @@ When two requests save the same unique value at the same moment, the second gets
 
 ## Success messages
 
-### App (52 routes)
+### App (53 routes)
 
 | Method | Route | Message |
 | --- | --- | --- |
@@ -202,6 +202,7 @@ When two requests save the same unique value at the same moment, the second gets
 | POST | `/api/v1/auth/register` | Welcome! Your account is ready. Check your email for a code to confirm your address. |
 | GET | `/api/v1/auth/sessions` | Signed-in devices loaded. |
 | DELETE | `/api/v1/auth/sessions/{sessionId}` | — (no content (204)) |
+| POST | `/api/v1/internal/notifications` | Notification queued. |
 | GET | `/api/v1/notes` | Notes loaded. |
 | POST | `/api/v1/notes` | Note created. |
 | DELETE | `/api/v1/notes/{id}` | — (no content (204)) |

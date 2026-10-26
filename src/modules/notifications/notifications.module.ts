@@ -8,7 +8,11 @@ import { notificationsConfig } from '@/config/configuration';
 import { QueueName } from '@/infra/queue/queue.constants';
 import { DeviceRegistryService } from './device-registry.service';
 import { InboxService } from './inbox.service';
-import { AdminNotificationsController, NotificationsController } from './notifications.controller';
+import {
+  AdminNotificationsController,
+  InternalNotificationsController,
+  NotificationsController,
+} from './notifications.controller';
 import { NotificationsCron } from './notifications.cron';
 import { NotificationsEventHandlers } from './notifications.handlers';
 import { NotificationsProcessor } from './notifications.processor';
@@ -55,7 +59,7 @@ export class NotificationsCoreModule {}
 
 @Module({
   imports: [NotificationsCoreModule],
-  controllers: [NotificationsController, AdminNotificationsController],
+  controllers: [NotificationsController, AdminNotificationsController, InternalNotificationsController],
 })
 export class NotificationsApiModule {}
 

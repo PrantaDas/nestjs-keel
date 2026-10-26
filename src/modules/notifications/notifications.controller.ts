@@ -1,7 +1,8 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, Req } from '@nestjs/common';
+import type { Request } from 'express';
+import { ApiBearerAuth, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { createHash } from 'node:crypto';
-import { CurrentUser, RequirePermissions } from '@/common/auth/auth.decorators';
+import { ApiKeyAuth, CurrentUser, RequirePermissions } from '@/common/auth/auth.decorators';
 import { Permission } from '@/common/auth/permissions';
 import { Notifier } from '@/common/contracts/notifier.contract';
 import { Audit } from '@/common/decorators/audit.decorator';
@@ -110,5 +111,36 @@ export class AdminNotificationsController {
   @ResponseMessage('Notification sent to the topic.')
   async sendToTopic(@Param() params: TopicParamDto, @Body() dto: AdminTopicMessageDto) {
     return { messageId: await this.push.sendToTopic(params.topic, { title: dto.title, body: dto.body }) };
+  }
+}
+
+/**
+ * Machine clients (another backend, a scheduler) notify accounts with an API key instead of a user
+ * token (`x-api-key`, keys in API_KEYS). Same rules as staff sends: unreachable accounts are left
+ * out, a repeat of the same `occurrenceKey` sends nothing new.
+ */
+@ApiTags('Internal')
+@ApiSecurity('apiKey')
+@ApiKeyAuth()
+@Controller('internal/notifications')
+export class InternalNotificationsController {
+  constructor(private readonly notifier: Notifier) {}
+
+  @Post()
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: 'Notify accounts from another service (API key)', operationId: 'internalNotificationsSend' })
+  @ApiEnvelope(QueuedResponse)
+  @ApiStandardErrors(NotificationsErrors.TOO_MANY_RECIPIENTS)
+  @ResponseMessage('Notification queued.')
+  send(@Req() req: Request, @Body() dto: AdminSendNotificationDto) {
+    const client = req.apiClient?.name ?? 'unknown';
+    return this.notifier.notifyUsers({
+      source: `api:${client}`,
+      occurrenceKey: RequestContext.requestId() ?? createHash('sha256').update(dto.title).digest('hex'),
+      userIds: dto.userIds,
+      title: dto.title,
+      body: dto.body,
+      channels: dto.channels,
+    });
   }
 }

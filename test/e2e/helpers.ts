@@ -13,6 +13,8 @@ import { UsersService } from '@/modules/identity/users/users.service';
 
 export const API = '/api/v1';
 export const PASSWORD = 'correct-horse-42';
+/** Matches the digest in setup-env.ts API_KEYS. */
+export const E2E_API_KEY = 'e2e-machine-key-0123456789';
 
 export const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
 

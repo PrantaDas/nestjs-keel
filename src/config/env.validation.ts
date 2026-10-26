@@ -24,6 +24,20 @@ function isIanaZone(value: string): boolean {
   }
 }
 
+/** Placeholder secrets from `.env.example` must never reach production. */
+const realSecret = (name: string) =>
+  Joi.string()
+    .min(32)
+    .required()
+    .when('NODE_ENV', {
+      is: 'production',
+      then: Joi.string()
+        .pattern(/change-me/i, { invert: true })
+        .messages({
+          'string.pattern.invert.base': `"${name}" is still the local placeholder: generate one with openssl rand -base64 48`,
+        }),
+    });
+
 /**
  * Every environment variable the app reads, with its default. Boot fails fast with every problem
  * listed at once when something required is missing or malformed. Optional integrations default to
@@ -74,11 +88,11 @@ export const envValidationSchema = Joi.object({
   CACHE_DEFAULT_TTL_SECONDS: Joi.number().integer().min(1).default(300),
 
   // ── Auth: tokens, sessions, API keys ──
-  JWT_ACCESS_SECRET: Joi.string().min(32).required(),
+  JWT_ACCESS_SECRET: realSecret('JWT_ACCESS_SECRET'),
   JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
-  JWT_REFRESH_SECRET: Joi.string().min(32).required().invalid(Joi.ref('JWT_ACCESS_SECRET')).messages({
-    'any.invalid': '"JWT_REFRESH_SECRET" must differ from "JWT_ACCESS_SECRET"',
-  }),
+  JWT_REFRESH_SECRET: realSecret('JWT_REFRESH_SECRET')
+    .invalid(Joi.ref('JWT_ACCESS_SECRET'))
+    .messages({ 'any.invalid': '"JWT_REFRESH_SECRET" must differ from "JWT_ACCESS_SECRET"' }),
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('30d'),
   JWT_ISSUER: Joi.string().default('nest-boilerplate'),
   JWT_AUDIENCE: Joi.string().default('nest-boilerplate'),

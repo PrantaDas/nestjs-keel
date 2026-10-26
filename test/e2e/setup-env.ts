@@ -55,6 +55,8 @@ process.env = {
   RABBITMQ_URL: '',
   TRANSPORT_ROUTES: '',
   EVENTS_EXTERNAL: 'none',
+  // Machine client for @ApiKeyAuth routes; the key itself is E2E_API_KEY in helpers.ts.
+  API_KEYS: 'e2e=d857d52b6186945441ae9471e940f4c04362138f817110f5a13f1f161690a1c1',
   JWT_ACCESS_SECRET: base.JWT_ACCESS_SECRET || 'e2e-access-secret-that-is-at-least-32-chars',
   JWT_REFRESH_SECRET: base.JWT_REFRESH_SECRET || 'e2e-refresh-secret-that-is-at-least-32-chars',
 };

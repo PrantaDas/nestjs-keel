@@ -93,6 +93,26 @@ export const RequestErrors = defineErrors('request', [2000, 2999], {
     status: HttpStatus.UNSUPPORTED_MEDIA_TYPE,
     message: "This type of content isn't supported. Please try again from the app or the admin panel.",
   },
+  IDEMPOTENCY_IN_PROGRESS: {
+    code: 2012,
+    status: HttpStatus.CONFLICT,
+    message: 'This request is still being processed. Please wait a moment before trying again.',
+  },
+  IDEMPOTENCY_KEY_REUSED: {
+    code: 2013,
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'This request reference was already used with different details. Send a new reference.',
+  },
+  INVALID_IDEMPOTENCY_KEY: {
+    code: 2014,
+    status: HttpStatus.BAD_REQUEST,
+    message: "The request reference isn't valid. Use 8 to 128 letters, digits, dashes or underscores.",
+  },
+  ENDPOINT_RETIRED: {
+    code: 2015,
+    status: HttpStatus.GONE,
+    message: 'This version of the app is no longer supported. Please update the app.',
+  },
   /** The client hung up before its request was read (nginx's 499). Nobody receives it; logs only. */
   CLIENT_CLOSED_REQUEST: {
     code: 2011,

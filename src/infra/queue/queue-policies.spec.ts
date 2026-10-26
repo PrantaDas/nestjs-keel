@@ -23,20 +23,15 @@ describe('queue policies', () => {
     }
   });
 
-  it('rate-limit the queues that talk to providers with quotas (FCM, WATI)', () => {
-    for (const name of [
-      QueueName.CAMPAIGNS,
-      QueueName.NOTIFICATION_DELIVERIES,
-      QueueName.WHATSAPP_WELCOME,
-      QueueName.CONTENT_PRAYER_ALERTS,
-    ]) {
+  it('rate-limit the queues that talk to providers with quotas (FCM, SMS, SMTP)', () => {
+    for (const name of [QueueName.NOTIFICATIONS, QueueName.OTP_DELIVERY]) {
       expect(workerOptionsFor(name).limiter).toEqual(expect.objectContaining({ max: expect.any(Number) }));
     }
   });
 
   it('job defaults: jittered exponential backoff and bounded retention', () => {
-    expect(jobOptionsFor(QueueName.REPORT_JOBS)).toEqual({
-      attempts: 3,
+    expect(jobOptionsFor(QueueName.ACCOUNT_DELETION)).toEqual({
+      attempts: 5,
       backoff: { type: 'exponential', delay: 30_000, jitter: 0.5 },
       removeOnComplete: KEEP_COMPLETED,
       removeOnFail: KEEP_FAILED,
@@ -46,7 +41,7 @@ describe('queue policies', () => {
   });
 
   it('worker defaults: stalled handling and per-minute metrics', () => {
-    expect(workerOptionsFor(QueueName.USERS)).toEqual({
+    expect(workerOptionsFor(QueueName.NOTES)).toEqual({
       concurrency: 5,
       lockDuration: 60_000,
       stalledInterval: 30_000,
@@ -62,10 +57,10 @@ describe('queue policies', () => {
   it('applyQueuePolicy sets the queue-level defaults over the root ones (and flags queues without a policy)', () => {
     const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     // Only the public fields the applier touches (a real Queue would open a Redis connection).
-    const queue = { name: QueueName.LIVE_QUIZ, jobsOpts: { attempts: 1, priority: 3 } } as unknown as Queue;
+    const queue = { name: QueueName.NOTES, jobsOpts: { attempts: 1, priority: 3 } } as unknown as Queue;
     applyQueuePolicy(queue);
     expect(queue.jobsOpts).toMatchObject({
-      attempts: 5,
+      attempts: 3,
       priority: 3,
       backoff: { type: 'exponential', delay: 5_000, jitter: 0.5 },
       removeOnFail: KEEP_FAILED,

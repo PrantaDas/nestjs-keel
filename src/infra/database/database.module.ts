@@ -58,6 +58,8 @@ function watchConnection(connection: Connection): void {
     if (gate.pass) logger.error({ err, suppressed: gate.suppressed }, 'MongoDB connection error');
   });
   connection.on('disconnected', () => {
+    // Closing on purpose (shutdown, CLI exit) is not an outage.
+    if (MongoConnectionSupervisor.closing) return;
     disconnectedAt ??= performance.now();
     logger.warn('MongoDB disconnected: queries wait up to the server selection timeout, then answer 503');
   });

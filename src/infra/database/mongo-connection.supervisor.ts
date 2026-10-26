@@ -46,6 +46,8 @@ export function reconnectDelayMs(attempt: number, random: () => number = Math.ra
  */
 @Injectable()
 export class MongoConnectionSupervisor implements OnModuleInit, BeforeApplicationShutdown {
+  /** Set once the app starts closing: the disconnect that follows is expected, not logged as an outage. */
+  static closing = false;
   private readonly logger = new Logger('MongoDB');
   private timer?: NodeJS.Timeout;
   private stopped = false;
@@ -62,6 +64,7 @@ export class MongoConnectionSupervisor implements OnModuleInit, BeforeApplicatio
    * (indexes, `connection.db`), then lets the boot continue whatever happened.
    */
   async onModuleInit(): Promise<void> {
+    MongoConnectionSupervisor.closing = false;
     if (this.connection.readyState === ConnectionStates.connected) return;
     const first = this.connection.asPromise().then(
       () => true,
@@ -83,6 +86,7 @@ export class MongoConnectionSupervisor implements OnModuleInit, BeforeApplicatio
   }
 
   beforeApplicationShutdown(): void {
+    MongoConnectionSupervisor.closing = true;
     this.stopped = true;
     clearTimeout(this.timer);
   }

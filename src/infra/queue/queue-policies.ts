@@ -53,125 +53,51 @@ export interface QueuePolicy {
  * warn about a differing decorator value). Documented in docs/conventions/queues.md.
  */
 export const QUEUE_POLICIES: Readonly<Record<QueueName, QueuePolicy>> = Object.freeze({
-  [QueueName.REWARD_PERIOD_SNAPSHOTS]: {
-    purpose: 'Snapshot a closing leaderboard period',
-    owner: 'rewards',
-    attempts: 5,
-    backoffMs: 10 * SECOND,
-    concurrency: 1,
-    lockMs: 2 * MINUTE,
-    idempotency: 'resumable cursor + upserts; jobId per close attempt',
-  },
-  [QueueName.STORAGE_CLEANUP]: {
-    purpose: 'Delete S3 objects (avatars, rejected uploads, replaced images)',
-    owner: 'platform',
-    attempts: 5,
-    backoffMs: 30 * SECOND,
-    concurrency: 2,
-    idempotency: 'deleting a missing object is a no-op',
-  },
-  [QueueName.REPORT_JOBS]: {
-    purpose: 'Generate xlsx exports to S3 and email the signed link',
-    owner: 'platform',
+  [QueueName.OTP_DELIVERY]: {
+    purpose: 'Deliver a one-time code by SMS or e-mail',
+    owner: 'identity',
+    // A code is only useful for a few minutes: retry quickly, then give up (the person can resend).
     attempts: 3,
-    backoffMs: 30 * SECOND,
-    concurrency: 2,
-    lockMs: 2 * MINUTE,
-    idempotency: 'conditional state changes; email claimed once (send-once key)',
+    backoffMs: 2 * SECOND,
+    concurrency: 10,
+    // Provider quotas (Twilio account rate, SMTP relay): at most 20 sends a second across workers.
+    limiter: { max: 20, duration: SECOND },
+    idempotency: 'send-once claim per code (otp:<key>:<sends>); ambiguous sends are never repeated',
   },
-  [QueueName.FILE_PURGE]: {
-    purpose: 'Purge a file-manager subtree (S3 objects, then rows)',
-    owner: 'platform',
-    attempts: 5,
-    backoffMs: 30 * SECOND,
-    concurrency: 1,
-    idempotency: 'deleting a missing object / row is a no-op',
-  },
-  [QueueName.USERS]: {
-    purpose: 'Anonymise accounts after the deletion grace period',
+  [QueueName.ACCOUNT_DELETION]: {
+    purpose: 'Anonymise accounts whose deletion grace period is over',
     owner: 'identity',
     attempts: 5,
     backoffMs: 30 * SECOND,
-    concurrency: 5,
+    concurrency: 2,
     idempotency: 're-checks the deletion request; anonymising twice is a no-op',
   },
-  [QueueName.DAILY_WORD_REMINDERS]: {
-    purpose: 'Dispatch due daily-word reminders through the Notifier (one run per minute)',
-    owner: 'daily-words',
-    attempts: 2,
-    backoffMs: 5 * SECOND,
-    concurrency: 1,
-    idempotency: 'Redis lock per run; Notifier dedupes (source, occurrenceKey, user)',
-  },
-  [QueueName.LIVE_QUIZ]: {
-    purpose: 'Finalize an ended live-quiz session (ranks, report, Redis cleanup)',
-    owner: 'live-quiz',
-    attempts: 5,
-    backoffMs: 5 * SECOND,
-    concurrency: 2,
-    idempotency: 'finalize is conditional on the session state',
-  },
-  [QueueName.CAMPAIGNS]: {
-    purpose: 'Campaign runs (audience paging), send batches (FCM), live-quiz event fan-in',
+  [QueueName.NOTIFICATIONS]: {
+    purpose: 'Push, inbox and e-mail deliveries requested through the Notifier (≤ 500 users per job)',
     owner: 'notifications',
     attempts: 3,
     backoffMs: 5 * SECOND,
     concurrency: 5,
-    // FCM quota (600k msgs/min per project): ~500 messages per batch job.
+    // FCM quota (600k messages / minute per project): ~500 messages per job.
     limiter: { max: 10, duration: SECOND },
     idempotency: 'deliveries claimed queued → sending once; never re-claimed or re-sent',
   },
-  [QueueName.NOTIFICATION_DELIVERIES]: {
-    purpose: 'Direct pushes requested through the Notifier port (≤ 500 users per job)',
-    owner: 'notifications',
-    attempts: 2,
+  [QueueName.NOTES]: {
+    purpose: 'Example module: note reminders and background work',
+    owner: 'examples',
+    attempts: 3,
     backoffMs: 5 * SECOND,
     concurrency: 5,
-    limiter: { max: 10, duration: SECOND },
-    idempotency: 'deliveries claimed queued → sending once; never re-claimed or re-sent',
+    idempotency: 'conditional claim on the note (reminderSentAt); Notifier dedupes per occurrence',
   },
-  [QueueName.QUICK_NOTIFICATIONS]: {
-    purpose: 'Quick (FCM topic) notifications and their inbox fan-out',
-    owner: 'notifications',
-    attempts: 3,
+  [QueueName.STRIPE_EVENTS]: {
+    purpose: 'Handle Stripe webhook events outside the webhook request',
+    owner: 'payments',
+    // Stripe retries a webhook for days; ours retry for about 40 minutes, then show up in ops.
+    attempts: 8,
     backoffMs: 10 * SECOND,
     concurrency: 2,
-    idempotency: 'claim scheduled → sending per revision; ambiguous push failures are not retried',
-  },
-  [QueueName.REFERRALS]: {
-    purpose: 'Referral rewards, short-link cleanup, anonymisation clean-up',
-    owner: 'growth',
-    attempts: 5,
-    backoffMs: 5 * SECOND,
-    concurrency: 5,
-    idempotency: 'conditional claim + rewards source key in one transaction',
-  },
-  [QueueName.WHATSAPP_WELCOME]: {
-    purpose: 'WhatsApp (WATI) registration welcome and staff registration alert',
-    owner: 'growth',
-    attempts: 5,
-    backoffMs: 30 * SECOND,
-    concurrency: 2,
-    // WATI API quota.
-    limiter: { max: 60, duration: MINUTE },
-    idempotency: 'welcome: log row claimed atomically, ambiguous sends → unknown; alert: send-once key',
-  },
-  [QueueName.CONTENT_PRAYER_ALERTS]: {
-    purpose: 'Staff WhatsApp alert for a new prayer request',
-    owner: 'content',
-    attempts: 5,
-    backoffMs: 30 * SECOND,
-    concurrency: 2,
-    limiter: { max: 30, duration: MINUTE },
-    idempotency: 'alertSentAt mark + send-once key per request',
-  },
-  [QueueName.CONTENT_BIBLE_PURGE]: {
-    purpose: 'Batched removal of Bible verses and marks after a delete',
-    owner: 'content',
-    attempts: 3,
-    backoffMs: 10 * SECOND,
-    concurrency: 1,
-    idempotency: 'batched deletes; a sweep cron re-queues unfinished tasks',
+    idempotency: 'one job per Stripe event id; handlers are conditional (status transitions)',
   },
 });
 

@@ -48,10 +48,14 @@ export class TokenService {
   }
 
   /** A new refresh token for a session; `jti` is what the session stores to recognise it. */
-  async issueRefreshToken(userId: string, sessionId: string): Promise<IssuedRefreshToken> {
+  issueRefreshToken(userId: string, sessionId: string): Promise<IssuedRefreshToken> {
+    return this.issueRefreshTokenWithJti(userId, sessionId, randomUUID());
+  }
+
+  /** Same, with a jti chosen by the session store (it is stored before the token is signed). */
+  async issueRefreshTokenWithJti(userId: string, sessionId: string, jti: string): Promise<IssuedRefreshToken> {
     const iat = this.time.epochSeconds();
     const exp = iat + this.refreshTtlSeconds;
-    const jti = randomUUID();
     const payload: RefreshTokenPayload = { sub: userId, sid: sessionId, jti, iat, exp, typ: 'refresh' };
     const token = await this.jwt.signAsync(payload, {
       secret: this.config.refreshSecret,

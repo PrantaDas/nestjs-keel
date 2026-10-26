@@ -39,6 +39,9 @@ async send(message: SmsMessage, options: { onceKey?: string } = {}) {
 }
 ```
 
+A provider without a usable SDK: call its REST API with `fetchJson(INTEGRATION, url, init)`
+(`integrations/http.util.ts`): timeout, breaker, JSON parsing and classified errors in one call.
+
 ## Inbound: Stripe webhooks
 
 `POST /api/webhooks/stripe` (no version prefix, public, excluded from Swagger) verifies the

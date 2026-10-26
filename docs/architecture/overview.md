@@ -1,7 +1,7 @@
 # Architecture overview
 
 A modular monolith on NestJS 12 that ships as **one codebase and one Docker image** and runs as
-five independent processes. Each process boots its own root module and shares one `CoreModule`.
+five independent processes (plus an optional gRPC one). Each process boots its own root module and shares one `CoreModule`.
 
 ```
             ┌───────────────────── one codebase, one image ─────────────────────┐
@@ -85,20 +85,3 @@ Dependency rule (enforced by ESLint `no-restricted-imports`):
   (`OutboxService.add(event, session)`); the worker's relay publishes it to in-process handlers
   and, when configured, to the message transport. Events survive a crash between commit and publish.
 - Heavy or fan-out work runs in BullMQ jobs. Every queue has a row in the policy table.
-
-## Build order (vertical slices, each ends green and committed)
-
-1. Config and bootstrap (entry points, process model, graceful shutdown, health)
-2. Envelopes, error registry, messages (and the message guard test)
-3. Time (clock, TimeService, validators, ESLint rules, multi-zone tests)
-4. Database and repository (connection supervisor, transactions, pagination, indexes, migrations)
-5. Auth and users (tokens with rotation, Redis sessions, OTP, users/admins, super admin CLI)
-6. Example module complete with tests (`modules/examples` – notes)
-7. Queues, cron, realtime (policies, `BaseProcessor`, `@LockedCron`, gateways, emitter)
-8. Integrations (S3, mail, SMS, push + notifications module, resilience)
-9. GraphQL (code-first, dataloaders, limits, subscriptions)
-10. Stripe (checkout, portal, webhook through a queue)
-11. Transport (outbox relay, gRPC, RabbitMQ)
-12. Ops, docs, CI, Docker, devcontainer, generator, seed, smoke and load tests
-
-Progress is logged in [progress.md](progress.md).

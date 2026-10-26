@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>nestjs-keel playground</title>
+    <!--
+      One page that talks to the running backend over every channel at once:
+      REST (api :3000), GraphQL queries and mutations (graphql :3002), GraphQL subscriptions over
+      graphql-ws (graphql :3002) and Socket.IO (socket :3001). "Run all checks" proves they work
+      together; ?auto=1 runs it on load (used by a headless browser). Start: pnpm playground.
+      URLs can be overridden: ?api=…&graphql=…&socket=…
+    -->
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --text: #1b1f24;
+        --muted: #5b6470;
+        --line: #dfe3e8;
+        --accent: #d9304f;
+        --ok: #1a7f37;
+        --bad: #c62828;
+        --code: #f0f2f5;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #111418;
+          --panel: #1a1e24;
+          --text: #e6e9ed;
+          --muted: #9aa4b1;
+          --line: #2b313a;
+          --accent: #ff5c7a;
+          --ok: #4ac26b;
+          --bad: #ff6b6b;
+          --code: #22272e;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          14px/1.45 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+      header h1 span {
+        color: var(--accent);
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+      }
+      main {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+        padding: 16px 20px 32px;
+        max-width: 1400px;
+      }
+      section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px 16px;
+        min-width: 0;
+      }
+      section.wide {
+        grid-column: 1 / -1;
+      }
+      h2 {
+        margin: 0 0 10px;
+        font-size: 15px;
+      }
+      label {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        margin: 8px 0 3px;
+      }
+      input {
+        width: 100%;
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--text);
+        font: inherit;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      button {
+        padding: 7px 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .pill {
+        display: inline-block;
+        padding: 1px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+      }
+      .pill.on {
+        color: var(--ok);
+        border-color: var(--ok);
+      }
+      .pill.off {
+        color: var(--bad);
+        border-color: var(--bad);
+      }
+      .status {
+        margin-top: 8px;
+        color: var(--muted);
+        min-height: 1.4em;
+        overflow-wrap: anywhere;
+      }
+      .log {
+        height: 220px;
+        overflow: auto;
+        margin: 0;
+        padding: 8px;
+        background: var(--code);
+        border-radius: 6px;
+        font:
+          12px/1.5 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .split {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 5px 6px;
+        border-bottom: 1px solid var(--line);
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      ol.checks {
+        margin: 0;
+        padding-left: 20px;
+      }
+      ol.checks li {
+        margin: 3px 0;
+      }
+      .pass {
+        color: var(--ok);
+      }
+      .fail {
+        color: var(--bad);
+      }
+      .verdict {
+        font-weight: 700;
+        margin: 8px 0 0;
+      }
+    </style>
+  </head>
+  <body data-result="idle">
+    <header>
+      <h1>nestjs-keel <span>playground</span></h1>
+      <p>REST · GraphQL · GraphQL subscriptions · Socket.IO, against the running processes</p>
+    </header>
+
+    <main>
+      <section>
+        <h2>1. Account (REST)</h2>
+        <label for="name">Name</label>
+        <input id="name" value="Playground Person" autocomplete="name" />
+        <label for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="email" />
+        <label for="password">Password</label>
+        <input id="password" type="password" value="correct-horse-42" autocomplete="current-password" />
+        <div class="row">
+          <button id="register" class="primary">Sign up</button>
+          <button id="login">Sign in</button>
+        </div>
+        <div class="status" id="account-status">Not signed in.</div>
+      </section>
+
+      <section>
+        <h2>2. Live channels</h2>
+        <p>
+          Socket.IO <span class="pill" id="socket-pill">disconnected</span><br />
+          GraphQL subscription <span class="pill" id="sub-pill">disconnected</span>
+        </p>
+        <div class="row">
+          <button id="connect" disabled>Connect both</button>
+          <button id="disconnect" disabled>Disconnect</button>
+        </div>
+        <label for="api-url">Endpoints</label>
+        <input id="api-url" readonly />
+        <input id="graphql-url" readonly style="margin-top: 4px" />
+        <input id="socket-url" readonly style="margin-top: 4px" />
+      </section>
+
+      <section>
+        <h2>3. Create a note</h2>
+        <label for="title">Title</label>
+        <input id="title" value="Hello from the playground" />
+        <div class="row">
+          <button id="create-rest" disabled>via REST</button>
+          <button id="create-gql" disabled>via GraphQL</button>
+          <button id="create-socket" disabled>via Socket.IO</button>
+        </div>
+        <div class="status" id="create-status"></div>
+      </section>
+
+      <section class="wide">
+        <h2>4. Events pushed to this page</h2>
+        <div class="split">
+          <div>
+            <label>Socket.IO <code>notes:changed</code></label>
+            <pre class="log" id="socket-log"></pre>
+          </div>
+          <div>
+            <label>GraphQL subscription <code>noteChanged</code></label>
+            <pre class="log" id="sub-log"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="wide">
+        <h2>5. My notes</h2>
+        <div class="row" style="margin-top: 0">
+          <button id="list-rest" disabled>Load via REST</button>
+          <button id="list-gql" disabled>Load via GraphQL (with owner)</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Business day</th>
+                <th>Owner</th>
+                <th>Id</th>
+              </tr>
+            </thead>
+            <tbody id="notes"></tbody>
+          </table>
+        </div>
+        <div class="status" id="list-status"></div>
+      </section>
+
+      <section class="wide">
+        <h2>Run all checks</h2>
+        <p class="status" style="margin-top: 0">
+          A fresh account, both live channels, one note per channel, then every event and list is checked.
+        </p>
+        <div class="row"><button id="run" class="primary">Run all checks</button></div>
+        <ol class="checks" id="checks"></ol>
+        <p class="verdict" id="verdict"></p>
+        <pre class="log" id="report" style="height: auto; max-height: 260px; display: none"></pre>
+      </section>
+    </main>
+
+    <script type="module">
+      import { io } from '/vendor/socket.io/socket.io.esm.min.js';
+      import { createClient } from '/vendor/graphql-ws/client.js';
+
+      const params = new URLSearchParams(location.search);
+      const API = params.get('api') ?? 'http://localhost:3000';
+      const GRAPHQL = params.get('graphql') ?? 'http://localhost:3002';
+      const SOCKET = params.get('socket') ?? 'http://localhost:3001';
+      const $ = (id) => document.getElementById(id);
+      $('api-url').value = `REST     ${API}/api/v1`;
+      $('graphql-url').value = `GraphQL  ${GRAPHQL}/graphql`;
+      $('socket-url').value = `Socket   ${SOCKET}`;
+      $('email').value = `play.${Date.now()}@example.com`;
+
+      /** Session state of the page. */
+      const state = { token: null, user: null, socket: null, gqlWs: null, unsubscribe: null };
+      /** Events received, for the checks. */
+      const seen = { socket: [], subscription: [] };
+
+      // ── Transport helpers ────────────────────────────────────────────────────
+      /** REST call; returns the envelope, throws the error envelope's message. */
+      async function rest(method, path, body) {
+        const res = await fetch(`${API}/api/v1${path}`, {
+          method,
+          headers: {
+            'content-type': 'application/json',
+            ...(state.token ? { authorization: `Bearer ${state.token}` } : {}),
+          },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
+        const json = res.status === 204 ? null : await res.json();
+        if (!res.ok)
+          throw Object.assign(new Error(json?.errorMessage ?? `HTTP ${res.status}`), {
+            status: res.status,
+            envelope: json,
+          });
+        return json;
+      }
+
+      /** GraphQL over HTTP; returns { data, errors } as sent. */
+      async function gql(query, variables) {
+        const res = await fetch(`${GRAPHQL}/graphql`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            ...(state.token ? { authorization: `Bearer ${state.token}` } : {}),
+          },
+          body: JSON.stringify({ query, variables }),
+        });
+        return res.json();
+      }
+
+      /** Socket.IO emit with ack, as a promise. */
+      const emit = (event, payload) =>
+        new Promise((resolve, reject) => {
+          if (!state.socket?.connected) return reject(new Error('Socket.IO is not connected.'));
+          state.socket.timeout(5000).emit(event, payload, (err, ack) => (err ? reject(err) : resolve(ack)));
+        });
+
+      const time = () => new Date().toLocaleTimeString();
+      function log(id, line) {
+        const el = $(id);
+        el.textContent += `${time()}  ${line}\n`;
+        el.scrollTop = el.scrollHeight;
+      }
+      function pill(id, on, text) {
+        $(id).className = `pill ${on ? 'on' : 'off'}`;
+        $(id).textContent = text;
+      }
+      function enable(signedIn) {
+        for (const id of ['connect', 'create-rest', 'create-gql', 'create-socket', 'list-rest', 'list-gql'])
+          $(id).disabled = !signedIn;
+      }
+
+      // ── 1. Account ───────────────────────────────────────────────────────────
+      async function signIn(kind) {
+        const body = { email: $('email').value.trim(), password: $('password').value };
+        if (kind === 'register') body.name = $('name').value.trim();
+        const { data, message } = await rest('POST', kind === 'register' ? '/auth/register' : '/auth/login', body);
+        state.token = data.accessToken;
+        state.user = data.user;
+        $('account-status').textContent = `${message} Signed in as ${data.user.name} (${data.user._id}).`;
+        enable(true);
+        return data;
+      }
+
+      // ── 2. Live channels ─────────────────────────────────────────────────────
+      function connectSocket() {
+        return new Promise((resolve, reject) => {
+          state.socket?.close();
+          const socket = io(SOCKET, { transports: ['websocket'], auth: { token: state.token }, reconnection: false });
+          state.socket = socket;
+          socket.on('connect', () => {
+            pill('socket-pill', true, 'connected');
+            resolve();
+          });
+          socket.on('connect_error', (err) => {
+            pill('socket-pill', false, 'refused');
+            reject(new Error(err.data?.errorMessage ?? err.message));
+          });
+          socket.on('disconnect', () => pill('socket-pill', false, 'disconnected'));
+          socket.on('notes:changed', (change) => {
+            seen.socket.push(change);
+            log('socket-log', `${change.action} ${change.noteId} v${change.version}`);
+          });
+          socket.on('exception', (envelope) => log('socket-log', `exception: ${envelope.errorMessage}`));
+        });
+      }
+
+      function connectSubscription() {
+        return new Promise((resolve, reject) => {
+          state.unsubscribe?.();
+          state.gqlWs?.dispose();
+          const client = createClient({
+            url: `${GRAPHQL.replace(/^http/, 'ws')}/graphql`,
+            connectionParams: { authorization: `Bearer ${state.token}` },
+            retryAttempts: 0,
+            on: {
+              connected: () => {
+                pill('sub-pill', true, 'subscribed');
+                resolve();
+              },
+              closed: () => pill('sub-pill', false, 'disconnected'),
+              error: (err) => reject(err instanceof Error ? err : new Error('GraphQL subscription refused.')),
+            },
+          });
+          state.gqlWs = client;
+          state.unsubscribe = client.subscribe(
+            { query: 'subscription { noteChanged { action noteId version } }' },
+            {
+              next: ({ data, errors }) => {
+                if (errors) return log('sub-log', `error: ${errors[0].message}`);
+                seen.subscription.push(data.noteChanged);
+                const c = data.noteChanged;
+                log('sub-log', `${c.action} ${c.noteId} v${c.version}`);
+              },
+              error: (err) => log('sub-log', `error: ${err?.message ?? 'closed'}`),
+              complete: () => log('sub-log', 'completed'),
+            },
+          );
+        });
+      }
+
+      async function connectBoth() {
+        await Promise.all([connectSocket(), connectSubscription()]);
+        // The subscription is registered right after `connected`; give the server a beat to store it.
+        await new Promise((r) => setTimeout(r, 300));
+        $('disconnect').disabled = false;
+      }
+
+      function disconnectBoth() {
+        state.socket?.close();
+        state.unsubscribe?.();
+        state.gqlWs?.dispose();
+        state.socket = state.gqlWs = state.unsubscribe = null;
+        $('disconnect').disabled = true;
+      }
+
+      // ── 3. Create ────────────────────────────────────────────────────────────
+      const create = {
+        rest: async (title) => (await rest('POST', '/notes', { title })).data,
+        graphql: async (title) => {
+          const { data, errors } = await gql(
+            'mutation ($input: CreateNoteInput!) { createNote(input: $input) { _id title } }',
+            {
+              input: { title },
+            },
+          );
+          if (errors) throw new Error(errors[0].message);
+          return data.createNote;
+        },
+        socket: async (title) => {
+          const ack = await emit('notes:create', { title });
+          if (!ack.success) throw new Error(ack.errorMessage);
+          return ack.data;
+        },
+      };
+
+      // ── 5. List ──────────────────────────────────────────────────────────────
+      function renderNotes(rows) {
+        const body = $('notes');
+        body.replaceChildren(
+          ...rows.map((n) => {
+            const tr = document.createElement('tr');
+            for (const value of [n.title, n.createdDay, n.owner?.name ?? '—', n._id]) {
+              const td = document.createElement('td');
+              td.textContent = value;
+              tr.append(td);
+            }
+            return tr;
+          }),
+        );
+      }
+      const list = {
+        rest: async () => {
+          const res = await rest('GET', '/notes?limit=50');
+          return { items: res.data, total: res.meta.totalDocs };
+        },
+        graphql: async () => {
+          const { data, errors } = await gql(
+            '{ notes(limit: 50) { items { _id title createdDay owner { name } } meta { totalDocs } } }',
+          );
+          if (errors) throw new Error(errors[0].message);
+          return { items: data.notes.items, total: data.notes.meta.totalDocs };
+        },
+      };
+
+      // ── Buttons ──────────────────────────────────────────────────────────────
+      const guard = (statusId, fn) => async () => {
+        try {
+          await fn();
+        } catch (err) {
+          $(statusId).textContent = err.message;
+        }
+      };
+      $('register').onclick = guard('account-status', () => signIn('register'));
+      $('login').onclick = guard('account-status', () => signIn('login'));
+      $('connect').onclick = guard('account-status', connectBoth);
+      $('disconnect').onclick = disconnectBoth;
+      for (const via of ['rest', 'graphql', 'socket']) {
+        $(`create-${via === 'graphql' ? 'gql' : via}`).onclick = guard('create-status', async () => {
+          const note = await create[via]($('title').value);
+          $('create-status').textContent = `Created over ${via}: ${note.title} (${note._id}).`;
+        });
+      }
+      for (const via of ['rest', 'graphql']) {
+        $(`list-${via === 'graphql' ? 'gql' : via}`).onclick = guard('list-status', async () => {
+          const { items, total } = await list[via]();
+          renderNotes(items);
+          $('list-status').textContent = `${total} note(s), loaded over ${via}.`;
+        });
+      }
+
+      // ── Run all checks ───────────────────────────────────────────────────────
+      async function runAll() {
+        $('run').disabled = true;
+        $('checks').replaceChildren();
+        $('verdict').textContent = '';
+        document.body.dataset.result = 'running';
+        const results = [];
+        const check = async (name, fn) => {
+          const li = document.createElement('li');
+          li.textContent = `${name} …`;
+          $('checks').append(li);
+          const started = performance.now();
+          try {
+            const detail = await fn();
+            const ms = Math.round(performance.now() - started);
+            li.className = 'pass';
+            li.textContent = `✓ ${name} (${ms} ms)${detail ? ` — ${detail}` : ''}`;
+            results.push({ name, ok: true, ms, detail });
+          } catch (err) {
+            li.className = 'fail';
+            li.textContent = `✗ ${name} — ${err.message}`;
+            results.push({ name, ok: false, error: err.message });
+          }
+        };
+        const until = async (probe, what, ms = 5000) => {
+          const end = performance.now() + ms;
+          while (performance.now() < end) {
+            if (probe()) return;
+            await new Promise((r) => setTimeout(r, 50));
+          }
+          throw new Error(`timed out waiting for ${what}`);
+        };
+
+        disconnectBoth();
+        seen.socket.length = 0;
+        seen.subscription.length = 0;
+        $('email').value = `play.${Date.now()}@example.com`;
+        const created = [];
+
+        await check('REST: sign up', async () => `user ${(await signIn('register')).user._id}`);
+        await check('Socket.IO handshake refused without a token', async () => {
+          const s = io(SOCKET, { transports: ['websocket'], auth: {}, reconnection: false });
+          const data = await new Promise((resolve) => s.on('connect_error', (e) => resolve(e.data)));
+          s.close();
+          if (data?.error !== 'MISSING_BEARER_TOKEN') throw new Error(`got ${JSON.stringify(data)}`);
+          return data.error;
+        });
+        await check('Socket.IO + GraphQL subscription: connect with the token', async () => {
+          await connectBoth();
+          return 'both live';
+        });
+        for (const via of ['rest', 'graphql', 'socket']) {
+          await check(`Create a note over ${via}`, async () => {
+            const note = await create[via](`Check over ${via}`);
+            created.push(note._id);
+            return note._id;
+          });
+        }
+        await check('Socket.IO: notes:changed for every note', async () => {
+          await until(() => created.every((id) => seen.socket.some((c) => c.noteId === id)), '3 socket events');
+          return `${seen.socket.length} event(s)`;
+        });
+        await check('GraphQL subscription: noteChanged for every note', async () => {
+          await until(
+            () => created.every((id) => seen.subscription.some((c) => c.noteId === id)),
+            '3 subscription events',
+          );
+          return `${seen.subscription.length} event(s), action ${seen.subscription[0]?.action}`;
+        });
+        await check('REST list sees all three', async () => {
+          const { total } = await list.rest();
+          if (total !== 3) throw new Error(`expected 3, got ${total}`);
+          return `${total} notes`;
+        });
+        await check('GraphQL list sees all three, owners batched', async () => {
+          const { items, total } = await list.graphql();
+          renderNotes(items);
+          if (total !== 3) throw new Error(`expected 3, got ${total}`);
+          if (!items.every((n) => n.owner?.name === state.user.name)) throw new Error('owner missing');
+          return `${total} notes, owner ${state.user.name}`;
+        });
+        await check('Socket.IO list (ack) sees all three', async () => {
+          const ack = await emit('notes:list', { limit: 10 });
+          if (!ack.success || ack.meta.totalDocs !== 3) throw new Error(JSON.stringify(ack).slice(0, 200));
+          return `${ack.meta.totalDocs} notes`;
+        });
+        await check('Same error contract everywhere', async () => {
+          const restErr = await rest('POST', '/notes', { title: '' }).catch((e) => e.envelope);
+          const gqlErr = (await gql('{ note(id: "000000000000000000000000") { title } }')).errors?.[0];
+          const socketErr = await emit('notes:create', { title: '' });
+          if (restErr?.error !== 'VALIDATION_FAILED') throw new Error(`REST: ${JSON.stringify(restErr)}`);
+          if (gqlErr?.extensions?.code !== 'NOTE_NOT_FOUND') throw new Error(`GraphQL: ${JSON.stringify(gqlErr)}`);
+          if (socketErr?.error !== 'VALIDATION_FAILED') throw new Error(`Socket: ${JSON.stringify(socketErr)}`);
+          return `REST ${restErr.errorCode}, GraphQL ${gqlErr.extensions.errorCode}, Socket ${socketErr.errorCode}`;
+        });
+
+        const ok = results.every((r) => r.ok);
+        $('verdict').className = `verdict ${ok ? 'pass' : 'fail'}`;
+        $('verdict').textContent = `${results.filter((r) => r.ok).length}/${results.length} checks passed.`;
+        $('report').style.display = 'block';
+        $('report').textContent = JSON.stringify({ ok, results, events: seen }, null, 1);
+        document.body.dataset.result = ok ? 'pass' : 'fail';
+        $('run').disabled = false;
+      }
+      $('run').onclick = runAll;
+      if (params.get('auto') === '1') runAll();
+    </script>
+  </body>
+</html>

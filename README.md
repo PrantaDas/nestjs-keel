@@ -70,6 +70,11 @@ pnpm dev:socket     # Socket.IO on :3001
 pnpm dev:graphql    # GraphQL on :3002/graphql (GraphiQL in development)
 ```
 
+**Try every channel at once:** start `pnpm dev:graphql` and `pnpm dev:socket` too, then
+`pnpm playground` and open http://localhost:5173. The page signs up over REST, listens on Socket.IO
+and a GraphQL subscription, creates notes over REST, GraphQL and Socket.IO, and shows the pushes
+arriving; **Run all checks** verifies the lot (12 checks).
+
 Local tools: Mailpit inbox http://localhost:8025, RabbitMQ console http://localhost:15672
 (guest/guest). With `OTP_DEV_LOG=true` (the default locally) one-time codes are
 printed in the api log instead of sent; set it to `false` to send them through the worker to Mailpit.
@@ -102,21 +107,22 @@ Details: [docs/architecture/processes.md](docs/architecture/processes.md).
 
 ## Commands
 
-| Command                                                                | What                                                                               |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `pnpm test` / `pnpm test:tz`                                           | Unit tests (no services) / under four server time zones                            |
-| `pnpm test:e2e` / `pnpm test:tz:e2e`                                   | End-to-end against compose services / under two zones                              |
-| `pnpm test:smoke`                                                      | Read-only checks of running processes (see [testing](docs/conventions/testing.md)) |
-| `pnpm lint` · `pnpm typecheck` · `pnpm format`                         | Quality gates (also run by Husky and CI)                                           |
-| `pnpm g:module invoices`                                               | New feature module from the example, wired into every process                      |
-| `pnpm migrate status\|up\|down\|create <name>`                         | Data migrations                                                                    |
-| `pnpm db:sync-indexes [--apply]`                                       | Compare / create schema indexes (production runs with autoIndex off)               |
-| `pnpm seed [--users 200] [--reset]`                                    | Local data (refuses non-local databases)                                           |
-| `pnpm admin:create --email you@example.com`                            | Create a super admin (password prompted, never a flag)                             |
-| `pnpm dev:token <userId>`                                              | Access token for a user, for curl, smoke and k6                                    |
-| `pnpm openapi:export` · `pnpm messages:export` · `pnpm graphql:schema` | Generated contracts (tests fail when stale)                                        |
-| `pnpm proto:gen` · `pnpm proto:lint`                                   | gRPC types from `proto/`                                                           |
-| `pnpm infra:up` · `pnpm infra:down`                                    | Local services                                                                     |
+| Command                                                                | What                                                                                 |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `pnpm test` / `pnpm test:tz`                                           | Unit tests (no services) / under four server time zones                              |
+| `pnpm test:e2e` / `pnpm test:tz:e2e`                                   | End-to-end against compose services / under two zones                                |
+| `pnpm test:smoke`                                                      | Read-only checks of running processes (see [testing](docs/conventions/testing.md))   |
+| `pnpm lint` · `pnpm typecheck` · `pnpm format`                         | Quality gates (also run by Husky and CI)                                             |
+| `pnpm g:module invoices`                                               | New feature module from the example, wired into every process                        |
+| `pnpm migrate status\|up\|down\|create <name>`                         | Data migrations                                                                      |
+| `pnpm db:sync-indexes [--apply]`                                       | Compare / create schema indexes (production runs with autoIndex off)                 |
+| `pnpm seed [--users 200] [--reset]`                                    | Local data (refuses non-local databases)                                             |
+| `pnpm admin:create --email you@example.com`                            | Create a super admin (password prompted, never a flag)                               |
+| `pnpm dev:token <userId>`                                              | Access token for a user, for curl, smoke and k6                                      |
+| `pnpm openapi:export` · `pnpm messages:export` · `pnpm graphql:schema` | Generated contracts (tests fail when stale)                                          |
+| `pnpm proto:gen` · `pnpm proto:lint`                                   | gRPC types from `proto/`                                                             |
+| `pnpm playground`                                                      | Browser page on :5173 exercising REST, GraphQL, subscriptions and Socket.IO together |
+| `pnpm infra:up` · `pnpm infra:down`                                    | Local services                                                                       |
 
 ## Deploy
 

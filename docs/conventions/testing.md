@@ -1,13 +1,14 @@
 # Testing
 
-| Suite         | Command                           | Needs             | What                                                                            |
-| ------------- | --------------------------------- | ----------------- | ------------------------------------------------------------------------------- |
-| Unit          | `pnpm test`                       | nothing           | `src/**/*.spec.ts` + `test/unit` (contracts: messages, OpenAPI, GraphQL schema) |
-| Unit, 4 zones | `pnpm test:tz`                    | nothing           | The unit suite under UTC, Asia/Dubai, America/Los_Angeles, Pacific/Kiritimati   |
-| E2E           | `pnpm test:e2e`                   | `pnpm infra:up`   | Real modules against compose MongoDB, Redis, RabbitMQ; providers faked          |
-| E2E, 2 zones  | `pnpm test:tz:e2e`                | `pnpm infra:up`   | The e2e suite under Asia/Dubai and Pacific/Kiritimati                           |
-| Smoke         | `pnpm test:smoke`                 | running processes | Read-only checks of a live deployment                                           |
-| Load          | `k6 run test/load/baseline.k6.js` | k6, running API   | Baseline profile with thresholds                                                |
+| Suite         | Command                                   | Needs                        | What                                                                                                  |
+| ------------- | ----------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Unit          | `pnpm test`                               | nothing                      | `src/**/*.spec.ts` + `test/unit` (contracts: messages, OpenAPI, GraphQL schema)                       |
+| Unit, 4 zones | `pnpm test:tz`                            | nothing                      | The unit suite under UTC, Asia/Dubai, America/Los_Angeles, Pacific/Kiritimati                         |
+| E2E           | `pnpm test:e2e`                           | `pnpm infra:up`              | Real modules against compose MongoDB, Redis, RabbitMQ; providers faked                                |
+| E2E, 2 zones  | `pnpm test:tz:e2e`                        | `pnpm infra:up`              | The e2e suite under Asia/Dubai and Pacific/Kiritimati                                                 |
+| Smoke         | `pnpm test:smoke`                         | running processes            | Read-only checks of a live deployment                                                                 |
+| Load          | `k6 run test/load/baseline.k6.js`         | k6, running API              | Baseline profile with thresholds                                                                      |
+| Playground    | `pnpm playground` → http://localhost:5173 | api, graphql, socket running | Clicks through REST, GraphQL, subscriptions and Socket.IO together; `?auto=1` runs all checks on load |
 
 NestJS 12 ships as ES modules, so Jest runs with `--experimental-vm-modules` (set in the scripts).
 
@@ -50,6 +51,17 @@ await eventually(async () => t.fakes.push.sentTo('token-1').length === 1); // as
 - `test/unit/openapi-contract.spec.ts`: every route documents its envelope, errors and auth; unique
   operation ids; no secret fields in responses.
 - `test/unit/graphql-schema.spec.ts`: `schema.gql` is current (`pnpm graphql:schema`).
+
+## Playground
+
+`tools/playground/` is a single page served by `pnpm playground` (port 5173, already allowed by
+`CORS_ORIGINS`). It uses the real browser clients (`socket.io-client`, `graphql-ws`, served from
+`node_modules`) against the running api, graphql and socket processes: sign up, live Socket.IO and
+GraphQL subscription feeds, create and list notes over every channel. **Run all checks** creates a
+fresh account and verifies, in order: handshake refusal without a token, both live channels, one
+note per channel, every push on both feeds, the three lists, and the same error contract on REST,
+GraphQL and Socket.IO. Other hosts: `?api=…&graphql=…&socket=…` (add the page's origin to
+`CORS_ORIGINS`).
 
 ## Smoke and load
 

@@ -75,6 +75,7 @@
     "graphql:schema": "nest build && node --enable-source-maps dist/cli/graphql-schema.js",
     "proto:gen": "buf generate && prettier --write src/infra/transport/grpc/generated",
     "g:module": "node scripts/generate-module.mjs",
+    "playground": "node tools/playground/serve.mjs",
     "prepare": "husky || true",
     "proto:lint": "buf lint"
   },

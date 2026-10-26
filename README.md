@@ -42,7 +42,8 @@ pnpm dev:graphql    # GraphQL on :3002/graphql (GraphiQL in development)
 ```
 
 Local tools: Mailpit inbox http://localhost:8025, RabbitMQ console http://localhost:15672
-(guest/guest). OTP codes are printed in the worker log (`OTP_DEV_LOG=true`).
+(guest/guest). With `OTP_DEV_LOG=true` (the default locally) one-time codes are
+printed in the api log instead of sent; set it to `false` to send them through the worker to Mailpit.
 
 ## Processes
 
@@ -114,7 +115,7 @@ docs/                 architecture, conventions, ADRs, API catalogues
 | Port 27047 / 6389 / 6390 in use                            | Another compose project: `docker ps`, or change the host port in `docker-compose.yml` and `.env`           |
 | `ERR_REQUIRE_ESM` or "Cannot use import statement" in Jest | Run tests through `pnpm test` (sets `--experimental-vm-modules`)                                           |
 | E2E fails with "refuses a remote database"                 | `MONGO_URI` points off this machine; tests only run locally                                                |
-| Codes never arrive                                         | Start `pnpm dev:worker`; with `OTP_DEV_LOG=true` the code is in its log                                    |
+| Codes never arrive                                         | With `OTP_DEV_LOG=true` they are in the api log; otherwise start `pnpm dev:worker` (it sends them)         |
 | Uploads fail with "not set up yet"                         | `S3_BUCKET` empty, or `s3-init` did not run: `docker compose up s3-init`                                   |
 | Payments routes answer "not set up yet"                    | Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [integrations](docs/conventions/integrations.md)) |
 | `docker compose --profile app up` fails at boot            | It reads `.env` for secrets (copy `.env.example`); compose itself points the URLs at the service names     |

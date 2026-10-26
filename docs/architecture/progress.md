@@ -50,3 +50,19 @@ Short, append-only notes on what was built per slice and what was decided along 
   0001–0015, socket events catalogue.
 - Cleanup: leftover names from the reference project removed from specs, field labels and the
   message jargon list; auth catalogue narrowed to 1000–1099 so auth-access owns 1100–1199.
+- Proof run (2026-10-26), all six processes from `dist/` against the compose services, with
+  `TRANSPORT_ROUTES=examples=grpc`, `EVENTS_EXTERNAL=rabbitmq` and test Stripe values: health and
+  readiness on api/graphql/socket; register, refresh rotation, reuse detection revoking the
+  session; OTP sent by the worker over SMTP to Mailpit, verified once, refused the second time;
+  socket handshake refusal envelope, `notes:create` / `notes:list` acks, validation error ack and
+  `notes:changed` pushes from the api process; GraphQL list with DataLoader owners and the error
+  contract; signed Stripe webhook accepted, replay flagged duplicate, forged body refused, event
+  applied by the worker; admin notification delivered to the inbox by the worker; admin user
+  detail counting notes over gRPC; four outbox events on the RabbitMQ topic exchange; heartbeats
+  of all six processes; smoke test 8/8; SIGTERM: every process "shut down cleanly".
+- The same with `docker compose --profile app` (image): found and fixed two bugs: the graphql
+  process wrote `schema.gql` at boot outside production (crash in the read-only image), and ops
+  reported the Stripe queue as missing its worker when Stripe is off (smoke false alarm). After
+  the fixes: smoke 8/8 against the containers, all exit 0 on `docker compose stop`.
+- Fresh clone → `pnpm install` → `.env` → `pnpm dev:api` ready: about 10 s on a machine with a
+  warm pnpm store and pulled images (cold: add the dependency download and image pulls).

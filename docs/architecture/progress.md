@@ -19,3 +19,13 @@ Short, append-only notes on what was built per slice and what was decided along 
   dead-token pruning, reachability checked twice) pulled forward because sign-in registers devices.
 - Found while building: BullMQ 6 rejects `:` in job ids; Mongoose needs `type: String` on enum
   props under ts-jest; MinIO images are no longer pullable, so local S3 is SeaweedFS.
+- Slice 6 (example module): `modules/examples` (notes) with every convention commented in place:
+  schema, DTOs shared with GraphQL, errors, events, repository (optimistic concurrency, claims),
+  views per API version, service, v1/v2 controllers with deprecation, resolver, gateway, processor,
+  crons, event handlers, unit and e2e tests; an example migration with a real `down`.
+- Slice 9 (GraphQL) pulled forward with it: separate process, code-first schema committed as
+  `schema.gql` (+ staleness test), same guards / validation / error codes as REST, DataLoaders,
+  depth and complexity limits, `graphql-ws` subscriptions over Redis pub/sub.
+- Multi-version controllers duplicate operation ids in OpenAPI: older versions get a `V<n>` suffix.
+- Found while building: core modules must export their queue registration, or a cron (producer
+  in another module) cannot inject it; the cron process would not have booted.

@@ -1,5 +1,11 @@
 import { HttpStatus, INestApplication, RequestMethod, Type } from '@nestjs/common';
-import { HTTP_CODE_METADATA, METHOD_METADATA, PATH_METADATA, ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
+import {
+  HTTP_CODE_METADATA,
+  METHOD_METADATA,
+  PATH_METADATA,
+  ROUTE_ARGS_METADATA,
+  VERSION_METADATA,
+} from '@nestjs/common/constants';
 import { MetadataScanner, ModulesContainer } from '@nestjs/core';
 import {
   DECORATORS,
@@ -74,27 +80,48 @@ export function collectRouteMetadata(app: INestApplication): RouteMetadata[] {
       >;
       const operation = Reflect.getMetadata(DECORATORS.API_OPERATION, handler) as OperationObject | undefined;
 
-      routes.push({
-        controller: controller.name,
-        handler: name,
-        target: { controller, handler },
-        operationId: operation?.operationId,
-        requestMethod,
-        successStatus:
-          (Reflect.getMetadata(HTTP_CODE_METADATA, handler) as number | undefined) ??
-          (requestMethod === RequestMethod.POST ? HttpStatus.CREATED : HttpStatus.OK),
-        isPublic: override<boolean>(IS_PUBLIC_KEY, handler, controller) ?? false,
-        roles: override<Role[]>(ROLES_KEY, handler, controller) ?? [],
-        permissions: override<Permission[]>(PERMISSIONS_KEY, handler, controller) ?? [],
-        apiKey: override<boolean>(API_KEY_AUTH_KEY, handler, controller) ?? false,
-        skipThrottle: override<boolean>(THROTTLER_SKIP_DEFAULT, handler, controller) ?? false,
-        parsesObjectId: Object.values(args).some(({ pipes = [] }) =>
-          pipes.some((pipe) => pipe === ParseObjectIdPipe || pipe instanceof ParseObjectIdPipe),
-        ),
-      });
+      const versions = routeVersions(handler, controller);
+      const latest = versions.length ? Math.max(...versions.map(Number)) : undefined;
+      for (const version of versions.length ? versions : [undefined]) {
+        routes.push({
+          controller: controller.name,
+          handler: name,
+          target: { controller, handler },
+          operationId: versionedOperationId(operation?.operationId, version, latest),
+          requestMethod,
+          successStatus:
+            (Reflect.getMetadata(HTTP_CODE_METADATA, handler) as number | undefined) ??
+            (requestMethod === RequestMethod.POST ? HttpStatus.CREATED : HttpStatus.OK),
+          isPublic: override<boolean>(IS_PUBLIC_KEY, handler, controller) ?? false,
+          roles: override<Role[]>(ROLES_KEY, handler, controller) ?? [],
+          permissions: override<Permission[]>(PERMISSIONS_KEY, handler, controller) ?? [],
+          apiKey: override<boolean>(API_KEY_AUTH_KEY, handler, controller) ?? false,
+          skipThrottle: override<boolean>(THROTTLER_SKIP_DEFAULT, handler, controller) ?? false,
+          parsesObjectId: Object.values(args).some(({ pipes = [] }) =>
+            pipes.some((pipe) => pipe === ParseObjectIdPipe || pipe instanceof ParseObjectIdPipe),
+          ),
+        });
+      }
     }
   }
   return routes;
+}
+
+/** The URI versions a route answers on (several when the controller lists them, e.g. `['1', '2']`). */
+function routeVersions(handler: object, controller: object): string[] {
+  const value = (Reflect.getMetadata(VERSION_METADATA, handler) ??
+    Reflect.getMetadata(VERSION_METADATA, controller)) as string | string[] | undefined;
+  return Array.isArray(value) && value.length > 1 ? value : [];
+}
+
+/**
+ * A handler served on several versions appears once per version in the document; operation ids
+ * must stay unique for generated clients, so every version but the latest gets a suffix:
+ * `notesCreate` (v2) and `notesCreateV1` (v1).
+ */
+export function versionedOperationId(id: string | undefined, version: string | undefined, latest: number | undefined) {
+  if (!id || version === undefined || Number(version) === latest) return id;
+  return `${id}V${version}`;
 }
 
 /** Errors any route can return because of the global guards, pipes and body parsers. */
@@ -152,6 +179,7 @@ function sortResponses(operation: OperationObject): void {
  *   the guard metadata, merged with the domain errors the route declared via `@ApiStandardErrors`.
  */
 export function finalizeOpenApiDocument(document: OpenAPIObject, routes: RouteMetadata[]): OpenAPIObject {
+  renameMultiVersionOperations(document);
   const byOperationId = new Map(routes.filter((r) => r.operationId).map((r) => [r.operationId!, r]));
 
   for (const pathItem of Object.values(document.paths)) {
@@ -173,6 +201,26 @@ export function finalizeOpenApiDocument(document: OpenAPIObject, routes: RouteMe
     }
   }
   return hoistErrorExamples(document);
+}
+
+/** Same rule as `versionedOperationId`, applied to the operations Swagger generated per version path. */
+function renameMultiVersionOperations(document: OpenAPIObject): void {
+  const byId = new Map<string, Array<{ operation: OperationObject; version: number }>>();
+  for (const [path, item] of Object.entries(document.paths)) {
+    const version = Number(/\/v(\d+)\//.exec(`${path}/`)?.[1] ?? NaN);
+    for (const method of ['get', 'put', 'post', 'delete', 'patch', 'options', 'head'] as const) {
+      const operation = item[method];
+      if (!operation?.operationId || Number.isNaN(version)) continue;
+      byId.set(operation.operationId, [...(byId.get(operation.operationId) ?? []), { operation, version }]);
+    }
+  }
+  for (const [id, entries] of byId) {
+    if (entries.length < 2) continue;
+    const latest = Math.max(...entries.map((entry) => entry.version));
+    for (const { operation, version } of entries) {
+      operation.operationId = versionedOperationId(id, String(version), latest);
+    }
+  }
 }
 
 /**

@@ -18,6 +18,8 @@ import { UsersController } from './users/users.controller';
 import { UsersRepository } from './users/users.repository';
 import { UsersService } from './users/users.service';
 
+const identityQueues = BullModule.registerQueue({ name: QueueName.OTP_DELIVERY }, { name: QueueName.ACCOUNT_DELETION });
+
 /**
  * Accounts, sessions, codes and sign-in for every process (the guards of api, graphql and socket
  * need `AccessValidator`; other modules need `UserDirectory`). Global so both ports resolve
@@ -25,10 +27,7 @@ import { UsersService } from './users/users.service';
  */
 @Global()
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    BullModule.registerQueue({ name: QueueName.OTP_DELIVERY }, { name: QueueName.ACCOUNT_DELETION }),
-  ],
+  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]), identityQueues],
   providers: [
     UsersRepository,
     UsersService,
@@ -39,7 +38,7 @@ import { UsersService } from './users/users.service';
     { provide: AccessValidator, useExisting: SessionService },
     { provide: UserDirectory, useExisting: UsersService },
   ],
-  exports: [AccessValidator, UserDirectory, UsersService, AuthService, SessionService],
+  exports: [AccessValidator, UserDirectory, UsersService, AuthService, SessionService, identityQueues],
 })
 export class IdentityCoreModule {}
 

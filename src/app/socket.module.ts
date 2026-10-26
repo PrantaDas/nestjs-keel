@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HealthModule } from '@/infra/health/health.module';
 import { HeartbeatModule } from '@/infra/heartbeat/heartbeat.module';
+import { NotesRealtimeModule } from '@/modules/examples/notes.module';
 import { IdentityCoreModule } from '@/modules/identity/identity.module';
 import { NotificationsCoreModule } from '@/modules/notifications/notifications.module';
 import { CoreModule } from './core.module';
@@ -15,6 +16,7 @@ import { httpProviders } from './http-providers';
     // Handshake auth needs AccessValidator (identity).
     IdentityCoreModule,
     NotificationsCoreModule,
+    NotesRealtimeModule,
     // g:module socket (keep this marker: the generator adds new modules above it)
   ],
   providers: httpProviders,

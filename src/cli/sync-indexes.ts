@@ -1,14 +1,14 @@
 import '@/common/time/force-utc';
-import '@/infra/sentry/instrument';
+import '@/config/load-env';
 import { NestFactory } from '@nestjs/core';
 import { getConnectionToken } from '@nestjs/mongoose';
 import type { Connection } from 'mongoose';
 import { parseArgs } from 'node:util';
-import { ApiModule } from '@/app/api.module';
+import { CliModule } from './cli.module';
 
 /**
- * Production runs with autoIndex off, so indexes declared in schemas are applied here, as a
- * deploy step. Default is a report only.
+ * Production runs with autoIndex off (MONGO_AUTO_INDEX=false), so the indexes declared on schemas
+ * are applied here, as a deploy step before the new version starts. Default is a report only.
  *
  *   pnpm db:sync-indexes            show missing / extra indexes per collection
  *   pnpm db:sync-indexes --apply    create missing indexes (never drops)
@@ -16,7 +16,7 @@ import { ApiModule } from '@/app/api.module';
  */
 async function main(): Promise<void> {
   const { values } = parseArgs({ options: { apply: { type: 'boolean' }, drop: { type: 'boolean' } } });
-  const app = await NestFactory.createApplicationContext(ApiModule, { logger: ['error', 'warn'] });
+  const app = await NestFactory.createApplicationContext(CliModule, { logger: ['error', 'warn'] });
   const connection = app.get<Connection>(getConnectionToken());
 
   try {

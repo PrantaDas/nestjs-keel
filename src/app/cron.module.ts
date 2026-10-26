@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { HeartbeatModule } from '@/infra/heartbeat/heartbeat.module';
+import { NotesCronModule } from '@/modules/examples/notes.module';
 import { IdentityCronModule } from '@/modules/identity/identity.module';
 import { NotificationsCronModule } from '@/modules/notifications/notifications.module';
 import { CoreModule } from './core.module';
@@ -13,6 +14,7 @@ import { CoreModule } from './core.module';
     ScheduleModule.forRoot(),
     IdentityCronModule,
     NotificationsCronModule,
+    NotesCronModule,
     // g:module cron (keep this marker: the generator adds new modules above it)
   ],
 })

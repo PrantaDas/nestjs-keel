@@ -75,7 +75,7 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | 2000 | `VALIDATION_FAILED` | 400 | App + admin | Some of the details aren't valid. Please check them and try again. |
 | 2001 | `BAD_REQUEST` | 400 | App + admin | We couldn't process this request. Please check it and try again. |
 | 2002 | `MALFORMED_JSON` | 400 | App + admin | We couldn't read what was sent. Please try again. |
-| 2003 | `INVALID_ID` | 400 | Admin | This link isn't valid. Please check it and try again. |
+| 2003 | `INVALID_ID` | 400 | App + admin | This link isn't valid. Please check it and try again. |
 | 2004 | `ROUTE_NOT_FOUND` | 404 | App + admin | We couldn't find that. Please check the address, or update the app if it's out of date. |
 | 2005 | `RESOURCE_NOT_FOUND` | 404 | App + admin | We couldn't find what you were looking for. |
 | 2006 | `DUPLICATE_RESOURCE` | 409 | App + admin | This already exists. Change it and try again. |
@@ -123,6 +123,16 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | 4000 | `INBOX_ITEM_NOT_FOUND` | 404 | App | We couldn't find that notification. |
 | 4001 | `TOO_MANY_RECIPIENTS` | 400 | Admin | Send to at most 10,000 people at once, or use a topic. |
 
+### Notes (5000–5004)
+
+| Code | Key | HTTP | Who sees it | Message |
+| --- | --- | --- | --- | --- |
+| 5000 | `NOTE_NOT_FOUND` | 404 | App | We couldn't find that note. It may have been deleted. |
+| 5001 | `NOTE_LIMIT_REACHED` | 409 | App | You have reached the maximum number of notes. Delete some to add new ones. |
+| 5002 | `NOTE_EDITED_ELSEWHERE` | 409 | App | This note was changed somewhere else. Reload it and apply your changes again. |
+| 5003 | `REMINDER_IN_PAST` | 400 | App | The reminder time has already passed. Choose a time in the future. |
+| 5004 | `NOTE_NOT_DELETED` | 409 | App | This note isn't in the bin, so there is nothing to restore. |
+
 ### System (9000–9102)
 
 | Code | Key | HTTP | Who sees it | Message |
@@ -154,7 +164,7 @@ When two requests save the same unique value at the same moment, the second gets
 
 ## Success messages
 
-### App (33 routes)
+### App (47 routes)
 
 | Method | Route | Message |
 | --- | --- | --- |
@@ -173,6 +183,13 @@ When two requests save the same unique value at the same moment, the second gets
 | POST | `/api/v1/auth/register` | Welcome! Your account is ready. Check your email for a code to confirm your address. |
 | GET | `/api/v1/auth/sessions` | Signed-in devices loaded. |
 | DELETE | `/api/v1/auth/sessions/{sessionId}` | — (no content (204)) |
+| GET | `/api/v1/notes` | Notes loaded. |
+| POST | `/api/v1/notes` | Note created. |
+| DELETE | `/api/v1/notes/{id}` | — (no content (204)) |
+| GET | `/api/v1/notes/{id}` | Note loaded. |
+| PATCH | `/api/v1/notes/{id}` | Note saved. |
+| POST | `/api/v1/notes/{id}/restore` | Note restored. |
+| GET | `/api/v1/notes/tags` | Tags loaded. |
 | GET | `/api/v1/notifications` | Notifications loaded. |
 | POST | `/api/v1/notifications/{id}/read` | Marked as read. |
 | POST | `/api/v1/notifications/read-all` | All notifications marked as read. |
@@ -191,6 +208,13 @@ When two requests save the same unique value at the same moment, the second gets
 | POST | `/api/v1/users/me/password` | Password changed. Your other devices were signed out. |
 | POST | `/api/v1/users/me/phone` | A code is on its way to the new number. |
 | POST | `/api/v1/users/me/phone/confirm` | Your phone number was changed. |
+| GET | `/api/v2/notes` | Notes loaded. |
+| POST | `/api/v2/notes` | Note created. |
+| DELETE | `/api/v2/notes/{id}` | — (no content (204)) |
+| GET | `/api/v2/notes/{id}` | Note loaded. |
+| PATCH | `/api/v2/notes/{id}` | Note saved. |
+| POST | `/api/v2/notes/{id}/restore` | Note restored. |
+| GET | `/api/v2/notes/tags` | Tags loaded. |
 
 ### Admin (9 routes)
 

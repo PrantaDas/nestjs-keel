@@ -1,13 +1,23 @@
 import { Module } from '@nestjs/common';
 import { CoreModule } from '@/app/core.module';
+import { AuditModule } from '@/modules/audit/audit.module';
+import { NotesCoreModule } from '@/modules/examples/notes.module';
 import { IdentityCoreModule } from '@/modules/identity/identity.module';
 import { NotificationsCoreModule } from '@/modules/notifications/notifications.module';
 
 /**
- * What command-line tools need: the shared infrastructure and the feature services they call
- * (no HTTP, no workers, no crons). The seed adds its own feature modules on top.
+ * What command-line tools load: the shared infrastructure and every feature's core module (models,
+ * services, ports), without HTTP, workers, crons or heartbeats. `sync-indexes` relies on it listing
+ * every module that owns a collection.
  */
 @Module({
-  imports: [CoreModule, IdentityCoreModule, NotificationsCoreModule],
+  imports: [
+    CoreModule,
+    AuditModule,
+    IdentityCoreModule,
+    NotificationsCoreModule,
+    NotesCoreModule,
+    // g:module cli (keep this marker: the generator adds new modules above it)
+  ],
 })
 export class CliModule {}

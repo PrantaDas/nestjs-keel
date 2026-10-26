@@ -8,6 +8,7 @@ import { AppThrottlerGuard } from '@/infra/security/app-throttler.guard';
 import { SecurityModule } from '@/infra/security/security.module';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { IdentityApiModule } from '@/modules/identity/identity.module';
+import { NotesApiModule } from '@/modules/examples/notes.module';
 import { NotificationsApiModule } from '@/modules/notifications/notifications.module';
 import { CoreModule } from './core.module';
 import { httpProviders } from './http-providers';
@@ -22,6 +23,7 @@ import { httpProviders } from './http-providers';
     AuditModule,
     IdentityApiModule,
     NotificationsApiModule,
+    NotesApiModule,
     // g:module api (keep this marker: the generator adds new modules above it)
   ],
   providers: [

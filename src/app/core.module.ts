@@ -6,6 +6,7 @@ import { TimeModule } from '@/common/time/time.module';
 import { AppConfigModule } from '@/config/config.module';
 import { CacheModule } from '@/infra/cache/cache.module';
 import { EventsModule } from '@/infra/events/events.module';
+import { GraphqlPubSubModule } from '@/infra/graphql/graphql-pubsub';
 import { CronInfraModule } from '@/infra/cron/cron-runs';
 import { DatabaseModule } from '@/infra/database/database.module';
 import { LifecycleModule } from '@/infra/lifecycle/lifecycle.module';
@@ -34,6 +35,8 @@ import { IntegrationsModule } from '@/integrations/integrations.module';
     RealtimeModule,
     // Domain events: every process writes to the outbox; only the worker relays (OutboxRelayModule).
     EventsModule,
+    // Any process may publish GraphQL subscription events; only the graphql process serves them.
+    GraphqlPubSubModule,
     AuthCoreModule,
     IntegrationsModule,
   ],

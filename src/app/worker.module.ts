@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { OutboxRelayModule } from '@/infra/events/events.module';
 import { HeartbeatModule } from '@/infra/heartbeat/heartbeat.module';
+import { NotesJobsModule } from '@/modules/examples/notes.module';
 import { IdentityJobsModule } from '@/modules/identity/identity.module';
 import { NotificationsJobsModule } from '@/modules/notifications/notifications.module';
 import { CoreModule } from './core.module';
@@ -13,6 +14,7 @@ import { CoreModule } from './core.module';
     OutboxRelayModule,
     IdentityJobsModule,
     NotificationsJobsModule,
+    NotesJobsModule,
     // g:module worker (keep this marker: the generator adds new modules above it)
   ],
 })

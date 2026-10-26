@@ -1,5 +1,7 @@
 import { hostname } from 'node:os';
 import { systemClock } from '@/common/time/clock';
+import type { TimeZone } from '@/common/time/time.types';
+import { timeZone } from '@/common/time/zoned-time';
 import type { Connection } from 'mongoose';
 import { Migration, MigrationContext, MigrationLogger } from './migration.types';
 
@@ -27,6 +29,7 @@ export class MigrationRunner {
     private readonly connection: Connection,
     private readonly migrations: Migration[],
     private readonly logger: MigrationLogger,
+    private readonly businessTimeZone: TimeZone = timeZone('UTC'),
   ) {}
 
   async status(): Promise<MigrationStatus[]> {
@@ -75,7 +78,13 @@ export class MigrationRunner {
   }
 
   private async execute(migration: Migration, direction: 'up' | 'down', dryRun: boolean): Promise<void> {
-    const ctx: MigrationContext = { db: this.connection.db!, connection: this.connection, dryRun, logger: this.logger };
+    const ctx: MigrationContext = {
+      db: this.connection.db!,
+      connection: this.connection,
+      dryRun,
+      logger: this.logger,
+      businessTimeZone: this.businessTimeZone,
+    };
     const label = `${direction.toUpperCase()}${dryRun ? ' (dry run)' : ''} ${migration.name}`;
     const startedAt = performance.now();
     this.logger.log(`▶ ${label}: ${migration.description}`);

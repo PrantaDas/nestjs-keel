@@ -1,0 +1,116 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input CreateNoteInput {
+  body: String
+  pinned: Boolean
+  reminder: LocalDateTimeInput
+  tags: [String!]
+  title: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input LocalDateTimeInput {
+  """Calendar date YYYY-MM-DD"""
+  date: String!
+
+  """24-hour wall-clock time HH:mm"""
+  time: String!
+
+  """IANA time zone, e.g. Asia/Dubai"""
+  timeZone: String!
+}
+
+type Mutation {
+  createNote(input: CreateNoteInput!): Note!
+
+  """Moves the note to the bin"""
+  deleteNote(id: ID!): Boolean!
+  updateNote(id: ID!, input: UpdateNoteInput!): Note!
+}
+
+type Note {
+  _id: ID!
+  body: String!
+  createdAt: DateTime!
+
+  """Business day the note was created on (YYYY-MM-DD)"""
+  createdDay: String!
+  owner: NoteOwner
+  pinned: Boolean!
+  reminder: NoteReminder
+  tags: [String!]!
+  title: String!
+  updatedAt: DateTime!
+  version: Int!
+}
+
+"""Pushed to the owner when one of their notes changes"""
+type NoteChange {
+  action: NoteChangeAction!
+  noteId: ID!
+  version: Int!
+}
+
+enum NoteChangeAction {
+  CREATED
+  DELETED
+  RESTORED
+  UPDATED
+}
+
+"""Public profile of the note owner (batched with a DataLoader)"""
+type NoteOwner {
+  avatarUrl: String
+  id: ID!
+  name: String!
+}
+
+type NotePage {
+  items: [Note!]!
+  meta: PageInfo!
+}
+
+type NoteReminder {
+  date: String!
+
+  """When it fires (UTC)"""
+  remindAt: DateTime!
+  sent: Boolean!
+  time: String!
+  timeZone: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPrevPage: Boolean!
+  limit: Int!
+  page: Int!
+  totalDocs: Int!
+  totalPages: Int!
+}
+
+type Query {
+  note(id: ID!): Note!
+
+  """My notes, pinned first"""
+  notes(limit: Int = 20, page: Int = 1, tag: String): NotePage!
+}
+
+type Subscription {
+  noteChanged: NoteChange!
+}
+
+input UpdateNoteInput {
+  body: String
+  expectedVersion: Int!
+  pinned: Boolean
+  reminder: LocalDateTimeInput
+  tags: [String!]
+  title: String
+}

@@ -1,4 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
+import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { ValidateBy, type ValidationArguments, type ValidationOptions } from 'class-validator';
@@ -84,19 +85,25 @@ function IsExistingLocalTime(options?: ValidationOptions): PropertyDecorator {
 }
 
 /**
- * Wall-clock input as a person enters it, e.g. an admin scheduling "20:00 on 12 Oct, Dubai time".
- * Convert with `TimeService.toInstant()`, store the instant plus `timeZone` (for editing/display).
+ * Wall-clock input as a person enters it, e.g. "20:00 on 12 Oct, Dubai time". Convert with
+ * `TimeService.toInstant()`, store the instant plus `timeZone` (for editing and display).
+ * One class for REST (Swagger) and GraphQL (`LocalDateTimeInput`), validated the same way.
  */
+@InputType('LocalDateTimeInput')
+@ObjectType('LocalDateTime')
 export class LocalDateTimeDto {
   @ApiProperty({ example: '2026-10-12', description: 'Calendar date YYYY-MM-DD' })
+  @Field(() => String, { description: 'Calendar date YYYY-MM-DD' })
   @IsDayKey()
   date: DayKey;
 
   @ApiProperty({ example: '20:00', description: '24-hour wall-clock time HH:mm' })
+  @Field(() => String, { description: '24-hour wall-clock time HH:mm' })
   @IsExistingLocalTime()
   time: LocalTime;
 
   @ApiProperty({ example: 'Asia/Dubai', description: 'IANA timezone the time is expressed in' })
+  @Field(() => String, { description: 'IANA time zone, e.g. Asia/Dubai' })
   @IsTimeZone()
   timeZone: TimeZone;
 }

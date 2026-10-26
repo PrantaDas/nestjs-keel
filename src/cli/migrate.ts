@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import { systemClock } from '@/common/time/clock';
 import { loadMigrations } from '@/migrations/migration.loader';
 import { MigrationRunner } from '@/migrations/migration.runner';
+import { scheduleBusinessTimeZone } from '@/config/schedule-zone';
 import { requireEnv } from './load-env';
 
 const USAGE = `
@@ -39,6 +40,7 @@ const migration: MigrationDefinition = {
   },
 
   async down({ db, dryRun, logger }) {
+    // Undo exactly what up() did (mark migrated documents if the change is not otherwise visible).
     throw new Error('down not implemented');
   },
 };
@@ -67,7 +69,7 @@ async function main(): Promise<void> {
   const connection = await mongoose
     .createConnection(requireEnv('MONGO_URI'), { serverSelectionTimeoutMS: 10_000 })
     .asPromise();
-  const runner = new MigrationRunner(connection, loadMigrations(), logger);
+  const runner = new MigrationRunner(connection, loadMigrations(), logger, scheduleBusinessTimeZone());
 
   try {
     if (command === 'status') {

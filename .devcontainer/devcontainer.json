@@ -1,0 +1,26 @@
+{
+  // A new machine needs Docker and an editor that speaks Dev Containers; nothing else.
+  "name": "nest-boilerplate",
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.devcontainer.yml"],
+  "service": "dev",
+  "runServices": ["dev", "mongo", "redis-core", "redis-cache", "mailpit", "s3", "s3-init", "rabbitmq"],
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "forwardPorts": [3000, 3001, 3002, 8025, 15672],
+  "portsAttributes": {
+    "3000": { "label": "api" },
+    "3001": { "label": "socket" },
+    "3002": { "label": "graphql" },
+    "8025": { "label": "mail inbox" },
+    "15672": { "label": "rabbitmq" }
+  },
+  "postCreateCommand": "corepack enable && pnpm install --frozen-lockfile && test -f .env || cp .devcontainer/.env.devcontainer .env",
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode", "orta.vscode-jest", "mongodb.mongodb-vscode"]
+    }
+  }
+}

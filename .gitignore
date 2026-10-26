@@ -37,3 +37,6 @@ test/load/results/
 
 # local agent worktrees / tool state
 .claude/
+
+# dev container env (local values only, no secrets)
+!.devcontainer/.env.devcontainer

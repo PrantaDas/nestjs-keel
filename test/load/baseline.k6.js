@@ -1,13 +1,15 @@
-// Baseline load profile (Phase 3 extends this per feature and compares against the legacy API).
+// Baseline load profile: a skeleton to grow per feature. Targets live in the thresholds.
 //
-//   k6 run -e BASE_URL=http://localhost:4000 -e TOKEN=$(node dist/cli/dev-token.js) test/load/baseline.k6.js
+//   TOKEN=$(pnpm -s dev:token <userId>) k6 run -e BASE_URL=http://localhost:3000 \
+//     -e GRAPHQL_URL=http://localhost:3002 -e TOKEN=$TOKEN test/load/baseline.k6.js
 //
-// Thresholds encode the targets: p95 < 300 ms, error rate < 1%.
+// Point it at a production-like environment (never production itself): it writes notes.
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check, group, sleep } from 'k6';
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:4000';
-const headers = { Authorization: `Bearer ${__ENV.TOKEN}` };
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+const GRAPHQL_URL = __ENV.GRAPHQL_URL || 'http://localhost:3002';
+const headers = { Authorization: `Bearer ${__ENV.TOKEN}`, 'Content-Type': 'application/json' };
 
 export const options = {
   scenarios: {
@@ -22,17 +24,37 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_duration: ['p(95)<300'],
+    'http_req_duration{kind:read}': ['p(95)<300'],
+    'http_req_duration{kind:write}': ['p(95)<500'],
     http_req_failed: ['rate<0.01'],
   },
 };
 
 export default function () {
-  const health = http.get(`${BASE_URL}/api/health`);
-  check(health, { 'health 200': (r) => r.status === 200 });
+  group('liveness', () => {
+    const health = http.get(`${BASE_URL}/api/health`, { tags: { kind: 'read' } });
+    check(health, { 'health 200': (r) => r.status === 200 });
+  });
 
-  const list = http.get(`${BASE_URL}/api/v6/samples?limit=20`, { headers });
-  check(list, { 'list 200': (r) => r.status === 200 });
+  group('notes (REST)', () => {
+    const list = http.get(`${BASE_URL}/api/v2/notes?limit=20`, { headers, tags: { kind: 'read' } });
+    check(list, { 'list 200': (r) => r.status === 200 });
+    if (Math.random() < 0.1) {
+      const created = http.post(`${BASE_URL}/api/v1/notes`, JSON.stringify({ title: `k6 ${__VU}-${__ITER}` }), {
+        headers,
+        tags: { kind: 'write' },
+      });
+      check(created, { 'create 201': (r) => r.status === 201 });
+    }
+  });
+
+  group('notes (GraphQL)', () => {
+    const res = http.post(GRAPHQL_URL + '/graphql', JSON.stringify({ query: '{ notes(limit: 10) { meta { totalDocs } } }' }), {
+      headers,
+      tags: { kind: 'read' },
+    });
+    check(res, { 'graphql ok': (r) => r.status === 200 && !r.json('errors') });
+  });
 
   sleep(1);
 }

@@ -3,9 +3,14 @@ dist
 coverage
 test
 .git
+.github
 .husky
+.devcontainer
 .env
 .env.*
 *.md
-dumps
+docs
+scripts
+schema.gql
+openapi.json
 logs

@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7
-# One image for every run mode; the start command picks the mode:
-#   node --enable-source-maps dist/main.api.js | main.socket.js | main.worker.js | main.cron.js
+# One image for every process; the start command picks it:
+#   node --enable-source-maps dist/main.api.js | main.graphql.js | main.socket.js | main.worker.js
+#   | main.cron.js | main.grpc.js        (and dist/cli/*.js for migrations, indexes, admin tools)
 
 FROM node:24-alpine AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
@@ -25,11 +26,14 @@ RUN apk add --no-cache tini
 COPY --from=build --chown=node:node /app/package.json ./
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
+# gRPC service definitions are loaded at runtime (client and server).
+COPY --chown=node:node proto ./proto
 USER node
 # tini (PID 1) forwards SIGTERM to node, whose graceful shutdown finishes within SHUTDOWN_TIMEOUT_MS
-# (default 25 s). Keep the platform stop timeout above it: ECS stopTimeout 30, `docker stop -t 30`.
-# No HEALTHCHECK: one image serves four modes and worker/cron have no HTTP port; api/socket use
-# /api/health (liveness, container restarts) and /api/ready (load balancer routing). See README.
+# (default 25 s). Keep the platform's stop timeout above it: Kubernetes terminationGracePeriodSeconds
+# 30, ECS stopTimeout 30, `docker stop -t 30`, compose stop_grace_period 30s.
+# No HEALTHCHECK: one image serves six processes and worker / cron have no HTTP port. HTTP processes
+# expose /api/health (liveness: restart) and /api/ready (readiness: routing); see docs/deployment.md.
 ENV SHUTDOWN_TIMEOUT_MS=25000
 STOPSIGNAL SIGTERM
 ENTRYPOINT ["/sbin/tini", "--"]

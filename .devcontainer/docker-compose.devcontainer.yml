@@ -1,0 +1,11 @@
+# The development container joins the same network as the infrastructure, so it reaches it by
+# service name (mongo, redis-core, …) rather than the host ports.
+services:
+  dev:
+    image: mcr.microsoft.com/devcontainers/typescript-node:24-bookworm
+    command: sleep infinity
+    volumes:
+      - ..:/workspace:cached
+    depends_on:
+      mongo: { condition: service_healthy }
+      redis-core: { condition: service_healthy }

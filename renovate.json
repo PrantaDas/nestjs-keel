@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":pinAllExceptPeerDependencies", ":semanticCommits"],
+  "description": "Dependency updates: exact versions, nothing younger than two weeks, related packages together.",
+  "minimumReleaseAge": "14 days",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "pin",
+  "packageRules": [
+    { "groupName": "NestJS", "matchPackageNames": ["@nestjs/**"] },
+    { "groupName": "OpenTelemetry", "matchPackageNames": ["@opentelemetry/**"] },
+    { "groupName": "AWS SDK", "matchPackageNames": ["@aws-sdk/**"] },
+    {
+      "groupName": "GraphQL",
+      "matchPackageNames": ["graphql", "graphql-ws", "@apollo/**", "@as-integrations/**", "dataloader"]
+    },
+    {
+      "groupName": "lint and format",
+      "matchPackageNames": ["eslint", "@eslint/**", "typescript-eslint", "prettier", "eslint-config-prettier"]
+    },
+    { "matchUpdateTypes": ["major"], "dependencyDashboardApproval": true }
+  ]
+}

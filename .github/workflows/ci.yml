@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, types, unit, time zones
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm proto:lint
+      # Includes the guards: human messages, OpenAPI contract, committed messages.md and schema.gql.
+      - run: pnpm test
+      # The whole unit suite under UTC, the business zone, a negative offset and UTC+14.
+      - run: pnpm test:tz
+      - run: pnpm build
+
+  e2e:
+    name: End-to-end (real MongoDB, Redis, RabbitMQ)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The same containers as local development (MongoDB needs a replica set: transactions).
+      - run: docker compose up -d --wait mongo redis-core redis-cache rabbitmq
+      - run: cp .env.example .env
+      - run: pnpm test:e2e
+      - run: pnpm test:tz:e2e
+      - if: failure()
+        run: docker compose logs --tail=200
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: nest-boilerplate:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

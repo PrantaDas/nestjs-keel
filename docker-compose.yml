@@ -1,0 +1,120 @@
+# Local stack. `pnpm infra:up` starts the infrastructure only (the app runs on the host with
+# `pnpm dev:*`); `docker compose --profile app up -d --build` also runs every process from the
+# production image, and `--profile transport` adds RabbitMQ. Host ports are offset (27047, 6389,
+# 6390) so they never clash with a MongoDB or Redis already installed on the machine.
+name: nest-boilerplate
+
+x-app: &app
+  build: .
+  image: nest-boilerplate:local
+  profiles: ['app']
+  env_file: [{ path: .env, required: false }]
+  environment:
+    NODE_ENV: development
+    MONGO_URI: mongodb://mongo:27017/app?directConnection=true
+    REDIS_URL: redis://redis-core:6379
+    REDIS_CACHE_URL: redis://redis-cache:6379
+    SMTP_HOST: mailpit
+    SMTP_PORT: '1025'
+    S3_ENDPOINT: http://s3:8333
+    LOG_PRETTY: 'false'
+  depends_on:
+    mongo: { condition: service_healthy }
+    redis-core: { condition: service_healthy }
+  # Above SHUTDOWN_TIMEOUT_MS (25 s) so the graceful shutdown always finishes before SIGKILL.
+  stop_grace_period: 30s
+  restart: unless-stopped
+
+services:
+  mongo:
+    image: mongo:8.2
+    # Single-node replica set: transactions need a replica set, same as production.
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    ports: ['27047:27017']
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mongosh',
+          '--quiet',
+          '--eval',
+          "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok }",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 5s
+
+  # Durable Redis: BullMQ, locks, sessions, OTP, rate limits, socket pub/sub. Must never evict keys.
+  redis-core:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    ports: ['6389:6379']
+    volumes: [redis-core-data:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 10
+
+  # Cache Redis: any key may be evicted under memory pressure; the app works without it.
+  redis-cache:
+    image: redis:7-alpine
+    command: ['redis-server', '--save', '', '--maxmemory', '256mb', '--maxmemory-policy', 'allkeys-lru']
+    ports: ['6390:6379']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 10
+
+  # Catches every e-mail the app sends: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ['1025:1025', '8025:8025']
+
+  # S3-compatible storage for local uploads (SeaweedFS S3 gateway, no auth locally): http://localhost:8333
+  s3:
+    image: chrislusf/seaweedfs:3.97
+    command: ['server', '-s3', '-s3.port=8333', '-dir=/data', '-volume.max=5']
+    ports: ['8333:8333']
+    volumes: [s3-data:/data]
+
+  # Creates the local bucket (S3 CreateBucket is `PUT /<bucket>`) once the gateway answers.
+  s3-init:
+    image: curlimages/curl:8.16.0
+    depends_on: [s3]
+    entrypoint: ['/bin/sh', '-c', 'until curl -sf -X PUT http://s3:8333/app-local; do sleep 1; done']
+    restart: 'no'
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    profiles: ['transport']
+    ports: ['5672:5672', '15672:15672']
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      retries: 10
+
+  api:
+    <<: *app
+    command: ['node', '--enable-source-maps', 'dist/main.api.js']
+    ports: ['3000:3000']
+  graphql:
+    <<: *app
+    command: ['node', '--enable-source-maps', 'dist/main.graphql.js']
+    ports: ['3002:3002']
+  socket:
+    <<: *app
+    command: ['node', '--enable-source-maps', 'dist/main.socket.js']
+    ports: ['3001:3001']
+  worker:
+    <<: *app
+    command: ['node', '--enable-source-maps', 'dist/main.worker.js']
+  cron:
+    <<: *app
+    command: ['node', '--enable-source-maps', 'dist/main.cron.js']
+
+volumes:
+  mongo-data:
+  redis-core-data:
+  s3-data:

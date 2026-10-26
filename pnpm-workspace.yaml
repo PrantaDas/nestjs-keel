@@ -1,0 +1,13 @@
+# Native build scripts pnpm may run (everything else is refused by default).
+allowBuilds:
+  '@parcel/watcher': false
+  unrs-resolver: false
+  '@firebase/util': false
+  '@scarf/scarf': false
+  msgpackr-extract: true
+  protobufjs: true
+  '@apollo/protobufjs': false
+
+# @nestjs/platform-socket.io pins its own socket.io; keep a single copy so adapter types match.
+overrides:
+  socket.io: 4.8.4

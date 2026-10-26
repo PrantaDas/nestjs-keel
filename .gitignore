@@ -1,0 +1,39 @@
+# deps & build
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*-service-account*.json
+/credentials/
+
+# data dumps (production dumps contain PII — never commit)
+dumps/
+*.archive
+*.bson
+*.gz
+
+# logs & runtime
+logs/
+*.log
+.pm2/
+
+# editors / os
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+
+# generated API snapshot (pnpm openapi:export)
+/openapi.json
+
+# k6 / test output
+test/load/results/
+
+# local agent worktrees / tool state
+.claude/

@@ -33,7 +33,7 @@ USER node
 # (default 25 s). Keep the platform's stop timeout above it: Kubernetes terminationGracePeriodSeconds
 # 30, ECS stopTimeout 30, `docker stop -t 30`, compose stop_grace_period 30s.
 # No HEALTHCHECK: one image serves six processes and worker / cron have no HTTP port. HTTP processes
-# expose /api/health (liveness: restart) and /api/ready (readiness: routing); see docs/deployment.md.
+# expose /api/health (liveness: restart) and /api/ready (readiness: routing); see docs/architecture/deployment.md.
 ENV SHUTDOWN_TIMEOUT_MS=25000
 STOPSIGNAL SIGTERM
 ENTRYPOINT ["/sbin/tini", "--"]

@@ -42,3 +42,11 @@ Short, append-only notes on what was built per slice and what was decided along 
   and by RabbitMQ RPC in the worker; outbox events published to RabbitMQ with `EVENTS_EXTERNAL`.
 - Found while building: durable RPC queue names must carry the exchange name, or environments (and
   test runs) sharing a broker collide on queue arguments.
+- Slice 12 (DX and docs): `pnpm g:module`, seed, Dockerfile (~330 MB, tini, non-root), dev
+  container, CI (checks + e2e on compose + image), Renovate, smoke and k6 rewritten for this app;
+  README, CONTRIBUTING, AGENTS.md/CLAUDE.md, conventions (responses, errors, messages, time,
+  database, queues, security, integrations, GraphQL, versioning, testing), architecture (processes,
+  fault tolerance, threat model, microservices with the examples extraction, deployment), ADRs
+  0001–0015, socket events catalogue.
+- Cleanup: leftover names from the reference project removed from specs, field labels and the
+  message jargon list; auth catalogue narrowed to 1000–1099 so auth-access owns 1100–1199.

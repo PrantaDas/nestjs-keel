@@ -42,7 +42,7 @@ src/
   infra/         technical services: database, redis, cache, queue, cron, realtime, health,
                  heartbeat, lifecycle, logger, security, sentry, telemetry, events/outbox, transport
   integrations/  outbound providers behind ports: s3, mail, sms, push, stripe + resilience
-  modules/       feature modules (identity, users, notifications, payments, ops, audit, examples)
+  modules/       feature modules (identity: auth, users, sessions, OTP; notifications, payments, ops, audit, examples)
   migrations/    data migration runner and scripts
   cli/           migrate, sync-indexes, seed, create-super-admin, dev-token, exports
 ```

@@ -133,6 +133,15 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | 5003 | `REMINDER_IN_PAST` | 400 | App | The reminder time has already passed. Choose a time in the future. |
 | 5004 | `NOTE_NOT_DELETED` | 409 | App | This note isn't in the bin, so there is nothing to restore. |
 
+### Ops (7000–7003)
+
+| Code | Key | HTTP | Who sees it | Message |
+| --- | --- | --- | --- | --- |
+| 7000 | `OPS_QUEUE_NOT_FOUND` | 404 | Admin | There is no background task list with this name. |
+| 7001 | `OPS_JOB_NOT_FOUND` | 404 | Admin | This job no longer exists. It may have been cleaned up or discarded. |
+| 7002 | `OPS_JOB_NOT_FAILED` | 409 | Admin | This job is no longer in the failed list. It may have been retried, discarded or be running. |
+| 7003 | `OPS_EVENT_NOT_FOUND` | 404 | Admin | There is no parked event with this id. It may have been delivered or retried already. |
+
 ### System (9000–9102)
 
 | Code | Key | HTTP | Who sees it | Message |
@@ -216,13 +225,20 @@ When two requests save the same unique value at the same moment, the second gets
 | POST | `/api/v2/notes/{id}/restore` | Note restored. |
 | GET | `/api/v2/notes/tags` | Tags loaded. |
 
-### Admin (9 routes)
+### Admin (16 routes)
 
 | Method | Route | Message |
 | --- | --- | --- |
 | GET | `/api/v1/admin/audit-logs` | Activity log loaded. |
 | POST | `/api/v1/admin/notifications/send` | Notification queued. |
 | POST | `/api/v1/admin/notifications/topics/{topic}` | Notification sent to the topic. |
+| POST | `/api/v1/admin/ops/outbox/{eventId}/retry` | Event queued for delivery again. |
+| GET | `/api/v1/admin/ops/outbox/failed` | Parked events loaded. |
+| GET | `/api/v1/admin/ops/processes` | Running processes loaded. |
+| GET | `/api/v1/admin/ops/queues` | Background task status loaded. |
+| GET | `/api/v1/admin/ops/queues/{name}/failed` | Failed jobs loaded. |
+| DELETE | `/api/v1/admin/ops/queues/{name}/failed/{jobId}` | — (no content (204)) |
+| POST | `/api/v1/admin/ops/queues/{name}/failed/{jobId}/retry` | Retry started. |
 | GET | `/api/v1/admin/users` | Accounts loaded. |
 | GET | `/api/v1/admin/users/{id}` | Account loaded. |
 | PATCH | `/api/v1/admin/users/{id}` | Account updated. |

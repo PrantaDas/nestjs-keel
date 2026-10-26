@@ -58,7 +58,8 @@ request ─▶ api / graphql / socket ── validates, authorises, writes Mongo
 
 ```bash
 pnpm infra:up                         # MongoDB, Redis ×2, Mailpit, S3, RabbitMQ
-pnpm dev:api & pnpm dev:graphql & pnpm dev:socket & pnpm dev:worker & pnpm dev:cron
+pnpm dev                              # api, graphql, socket, worker, cron: one compiler, restarts on change
+pnpm dev api graphql socket           # only some (one command: never two `pnpm dev` at once)
 # or, from the built image:
 docker compose --profile app up --build
 ```

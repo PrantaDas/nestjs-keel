@@ -49,8 +49,11 @@ pnpm install
 cp .env.example .env              # works as is for local development
 pnpm infra:up                     # MongoDB, Redis ×2, Mailpit, S3 (SeaweedFS), RabbitMQ
 pnpm seed                         # optional: staff accounts + 50 people with history (prints passwords once)
-pnpm dev:api                      # http://localhost:3000/api/v1, Swagger at http://localhost:3000/api/docs
+pnpm dev                          # every process, one compiler, prefixed logs; Ctrl-C stops all
 ```
+
+REST at http://localhost:3000/api/v1, Swagger at http://localhost:3000/api/docs, GraphQL at
+http://localhost:3002/graphql, Socket.IO on :3001.
 
 Check it:
 
@@ -60,17 +63,13 @@ curl -s -X POST localhost:3000/api/v1/auth/register -H 'content-type: applicatio
   -d '{"name":"Ada","email":"ada@example.com","password":"correct-horse-42"}' | jq '.data.accessToken'
 ```
 
-The other processes, each in its own terminal (or all at once from the image:
-`docker compose --profile app up --build`):
+`pnpm dev` compiles once (`nest build --watch`) and runs api, graphql, socket, worker and cron
+from `dist/`, restarting them after each successful rebuild (a build with type errors leaves them
+running). Pick processes with `pnpm dev api graphql socket`, or one with `pnpm dev:api`. Run them in
+**one** command: a second `pnpm dev` in another terminal would start a second compiler on the same
+`dist/` and is refused. From the production image instead: `docker compose --profile app up --build`.
 
-```bash
-pnpm dev:worker     # jobs: OTP delivery, notifications, reminders, Stripe events, outbox relay
-pnpm dev:cron       # schedules (Redis-locked)
-pnpm dev:socket     # Socket.IO on :3001
-pnpm dev:graphql    # GraphQL on :3002/graphql (GraphiQL in development)
-```
-
-**Try every channel at once:** start `pnpm dev:graphql` and `pnpm dev:socket` too, then
+**Try every channel at once:** with `pnpm dev` (or `pnpm dev api graphql socket`) running, start
 `pnpm playground` and open http://localhost:5173. The page signs up over REST, listens on Socket.IO
 and a GraphQL subscription, creates notes over REST, GraphQL and Socket.IO, and shows the pushes
 arriving; **Run all checks** verifies the lot (12 checks).
@@ -109,6 +108,7 @@ Details: [docs/architecture/processes.md](docs/architecture/processes.md).
 
 | Command                                                                | What                                                                                                 |
 | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `pnpm dev [api graphql socket worker cron grpc]`                       | Run processes locally from one compiler (default: all but grpc); `pnpm dev:api` etc. for one         |
 | `pnpm test` / `pnpm test:tz`                                           | Unit tests (no services) / under four server time zones                                              |
 | `pnpm test:e2e` / `pnpm test:tz:e2e`                                   | End-to-end against compose services / under two zones                                                |
 | `pnpm test:smoke`                                                      | Read-only checks of running processes (see [testing](docs/conventions/testing.md))                   |
@@ -211,17 +211,19 @@ render.yaml           Render Blueprint             ecosystem.config.cjs   PM2 (V
 
 ## Troubleshooting
 
-| Symptom                                                    | Fix                                                                                                        |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Boot stops with a list of env problems                     | Read the list; compare with `.env.example`                                                                 |
-| `/api/ready` says `mongodb: down`                          | `pnpm infra:up`; the URI must include `directConnection=true` locally (replica set)                        |
-| Port 27047 / 6389 / 6390 in use                            | Another compose project: `docker ps`, or change the host port in `docker-compose.yml` and `.env`           |
-| `ERR_REQUIRE_ESM` or "Cannot use import statement" in Jest | Run tests through `pnpm test` (sets `--experimental-vm-modules`)                                           |
-| E2E fails with "refuses a remote database"                 | `MONGO_URI` points off this machine; tests only run locally                                                |
-| Codes never arrive                                         | With `OTP_DEV_LOG=true` they are in the api log; otherwise start `pnpm dev:worker` (it sends them)         |
-| Uploads fail with "not set up yet"                         | `S3_BUCKET` empty, or `s3-init` did not run: `docker compose up s3-init`                                   |
-| Payments routes answer "not set up yet"                    | Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [integrations](docs/conventions/integrations.md)) |
-| `docker compose --profile app up` fails at boot            | It reads `.env` for secrets (copy `.env.example`); compose itself points the URLs at the service names     |
+| Symptom                                                    | Fix                                                                                                                             |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Boot stops with a list of env problems                     | Read the list; compare with `.env.example`                                                                                      |
+| `Cannot find module './…'` from `dist/`                    | Several compilers share `dist/` (e.g. one `nest start --watch` per terminal). Stop them all and run one `pnpm dev [processes…]` |
+| `pnpm dev is already running here`                         | Another `pnpm dev` runs in this checkout: stop it, start every process you need in one command                                  |
+| `/api/ready` says `mongodb: down`                          | `pnpm infra:up`; the URI must include `directConnection=true` locally (replica set)                                             |
+| Port 27047 / 6389 / 6390 in use                            | Another compose project: `docker ps`, or change the host port in `docker-compose.yml` and `.env`                                |
+| `ERR_REQUIRE_ESM` or "Cannot use import statement" in Jest | Run tests through `pnpm test` (sets `--experimental-vm-modules`)                                                                |
+| E2E fails with "refuses a remote database"                 | `MONGO_URI` points off this machine; tests only run locally                                                                     |
+| Codes never arrive                                         | With `OTP_DEV_LOG=true` they are in the api log; otherwise start `pnpm dev:worker` (it sends them)                              |
+| Uploads fail with "not set up yet"                         | `S3_BUCKET` empty, or `s3-init` did not run: `docker compose up s3-init`                                                        |
+| Payments routes answer "not set up yet"                    | Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [integrations](docs/conventions/integrations.md))                      |
+| `docker compose --profile app up` fails at boot            | It reads `.env` for secrets (copy `.env.example`); compose itself points the URLs at the service names                          |
 
 ## License
 

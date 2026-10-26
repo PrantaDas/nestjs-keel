@@ -55,5 +55,5 @@ createServer((req, res) => {
   createReadStream(file).pipe(res);
 }).listen(PORT, '127.0.0.1', () => {
   console.log(`Playground on http://localhost:${PORT}`);
-  console.log('Needs the api, graphql and socket processes running (pnpm dev:api, dev:graphql, dev:socket).');
+  console.log('Needs the api, graphql and socket processes running: pnpm dev (or pnpm dev api graphql socket).');
 });

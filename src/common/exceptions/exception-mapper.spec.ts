@@ -13,7 +13,7 @@ import { mapException } from './exception-mapper';
 
 /** E11000 as the driver throws it for `db.<collection>` and index `<index>`. */
 const duplicateKey = (collection: string, keyPattern: Record<string, 1>, keyValue: Record<string, unknown>) =>
-  Object.assign(new Error(`E11000 duplicate key error collection: lhq.${collection} index: x_1 dup key: { ... }`), {
+  Object.assign(new Error(`E11000 duplicate key error collection: app.${collection} index: x_1 dup key: { ... }`), {
     name: 'MongoServerError',
     code: 11000,
     keyPattern,
@@ -33,14 +33,14 @@ defineDuplicateKeys('mapper_spec_items', [
 
 describe('mapException', () => {
   it('maps domain exceptions to their catalogue entry', () => {
-    const { status, body, isServerError } = mapException(new ResourceNotFoundException('Quiz'), 'req-1');
+    const { status, body, isServerError } = mapException(new ResourceNotFoundException('Note'), 'req-1');
     expect(status).toBe(HttpStatus.NOT_FOUND);
     expect(isServerError).toBe(false);
     expect(body).toEqual({
       success: false,
       errorCode: 2005,
       error: 'RESOURCE_NOT_FOUND',
-      errorMessage: 'Quiz not found.',
+      errorMessage: 'Note not found.',
       requestId: 'req-1',
     });
   });
@@ -126,8 +126,8 @@ describe('mapException', () => {
   it('maps a Mongoose CastError without naming internal paths', () => {
     const cast = {
       name: 'CastError',
-      path: 'quizId',
-      message: 'Cast to ObjectId failed for value "x" at path "quizId"',
+      path: 'noteId',
+      message: 'Cast to ObjectId failed for value "x" at path "noteId"',
     };
     const hidden = mapException(cast);
     expect(hidden.body).toMatchObject({
@@ -136,8 +136,8 @@ describe('mapException', () => {
     });
     expect(hidden.body.details).toBeUndefined();
 
-    const sent = mapException(cast, undefined, { bodyFields: ['quizId'] });
-    expect(sent.body.details).toEqual([{ field: 'quizId', message: "Quiz isn't valid." }]);
+    const sent = mapException(cast, undefined, { bodyFields: ['noteId'] });
+    expect(sent.body.details).toEqual([{ field: 'noteId', message: "Note isn't valid." }]);
     expect(JSON.stringify(sent.body)).not.toMatch(INTERNALS);
   });
 

@@ -10,7 +10,7 @@ export const FORBIDDEN_IN_MESSAGES =
 
 /** Provider names and technical jargon a person should not have to read. */
 export const JARGON_IN_MESSAGES =
-  /\b(wati|msg91|twilio|firebase|fcm|unsplash|apitemplate|proxycheck|smtp|aws|sentry|http|endpoint|header|payload|json|bearer|idempoten\w*|enum|regex|boolean|e164|iso[ -]?8601|claim(ed|s)?|lock(ed|s)?|cache[ds]?|database|collection|index|schema|dto|webhook|ttl)\b/i;
+  /\b(twilio|firebase|fcm|stripe|smtp|aws|sentry|rabbitmq|grpc|http|endpoint|header|payload|json|bearer|idempoten\w*|enum|regex|boolean|e164|iso[ -]?8601|claim(ed|s)?|lock(ed|s)?|cache[ds]?|database|collection|index|schema|dto|webhook|ttl)\b/i;
 
 /**
  * A sentence: starts with a capital letter, a digit or a brand-style word such as "iOS" (after an

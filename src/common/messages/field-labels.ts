@@ -2,8 +2,8 @@
  * Human labels for request fields, used wherever a message names a field ("Title is required.").
  * `details[].field` keeps the real request path (forms map errors by it); only the wording changes.
  *
- * Most labels are derived from the property name (`showAnswerDuringActivity` → "Show answer during
- * activity", `questionIds` → "Questions", `imageKey` → "Image"). List a field here only when the
+ * Most labels are derived from the property name (`isPinned` → "Pinned",
+ * `tagIds` → "Tags", `imageKey` → "Image"). List a field here only when the
  * derived label would read badly or name an internal concept.
  */
 export const FIELD_LABELS: Readonly<Record<string, string>> = Object.freeze({
@@ -12,62 +12,31 @@ export const FIELD_LABELS: Readonly<Record<string, string>> = Object.freeze({
   ids: 'Items',
   from: 'Start date',
   to: 'End date',
-  createdFrom: 'Joined from',
-  createdTo: 'Joined until',
   dob: 'Date of birth',
   q: 'Search',
   limit: 'Page size',
-  phoneE164: 'Phone number',
   phone: 'Phone number',
-  countryCode: 'Country code',
-  dialCode: 'Country code',
   otp: 'Code',
-  s3Key: 'File',
+  key: 'Uploaded file',
   uploadKey: 'Uploaded file',
-  mediaKey: 'Uploaded media',
   imageKey: 'Image',
-  backgroundImageKey: 'Background image',
-  blankKey: 'Blank',
-  fcmToken: 'Notification token',
   pushToken: 'Notification token',
   deviceId: 'Device',
   appVersion: 'App version',
   osVersion: 'System version',
   idempotencyKey: 'Request reference',
-  occurrenceKey: 'Occurrence',
-  dedupeKey: 'Reference',
   cursor: 'Page',
   jobId: 'Job',
   url: 'Link',
   deepLink: 'Link',
-  deepLinkType: 'Link type',
-  groupBy: 'Grouping',
-  key: 'Uploaded file',
-  header: 'Heading level',
-  s3BucketUrl: 'File storage link',
-  firebaseTopics: 'Notification topics',
-  smtp: 'Email settings',
-  twilio: 'Text message settings',
-  msg91: 'Text message settings',
-  wati: 'WhatsApp settings',
-  isLocked: 'Locked',
-  clientDurationMs: 'Time taken',
   sizeBytes: 'File size',
-  htmlContent: 'Content',
-  insert: 'Text',
-  ops: 'Content',
-  // Same property name, different meaning: `Dto.property` wins over the plain name.
-  'SmtpSettingsDto.from': 'Sender address',
-  'SmtpSettingsDto.user': 'Username',
-  'SmtpSettingsDto.pass': 'Password',
-  'SmtpSettingsDto.host': 'Server',
+  timeZone: 'Time zone',
+  expectedVersion: 'Version',
   startsAt: 'Start time',
   endsAt: 'End time',
-  estimatedStartAt: 'Estimated start time',
-  sendAt: 'Send time',
-  scheduleAt: 'Scheduled time',
-  publishAt: 'Publish time',
-  expectedUpdatedAt: 'Last updated time',
+  remindAt: 'Reminder time',
+  // Same property name, different meaning: `Dto.property` wins over the plain name.
+  // 'ExportRangeDto.from': 'Export start date',
 });
 
 /** Word-level replacements applied to derived labels (lower-case keys). */
@@ -121,7 +90,7 @@ const capitalize = (text: string): string =>
 
 /**
  * Human label for a request field path: `title` → "Title", `schedule.recurring.endDate` → "End date",
- * `questionIds` → "Questions". Never returns internal key names. `target` (the DTO class name)
+ * `tagIds` → "Tags". Never returns internal key names. `target` (the DTO class name)
  * selects a `Dto.property` label when one property name means different things in different DTOs.
  */
 export function fieldLabel(path: string | undefined, target?: string): string {

@@ -41,7 +41,7 @@ class SignupDto {
   address: AddressDto;
 }
 
-class QuizDto {
+class NoteDto {
   @IsString({ message: 'title must be text' })
   @IsNotEmpty({ message: 'title is required' })
   @MaxLength(200, { message: 'title must be at most 200 characters long' })
@@ -58,8 +58,8 @@ class QuizDto {
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(2)
-  @IsMongoId({ each: true, message: 'each question id must be a 24-character hex ObjectId' })
-  questionIds?: string[];
+  @IsMongoId({ each: true, message: 'each tag id must be a 24-character hex ObjectId' })
+  tagIds?: string[];
 
   @IsOptional()
   @IsString()
@@ -94,29 +94,29 @@ describe('createValidationPipe', () => {
   });
 
   it('writes one human sentence per rule from the rule and its arguments', async () => {
-    const found = await details(QuizDto, {
+    const found = await details(NoteDto, {
       title: 'x'.repeat(201),
       day: '12-10-2026',
       level: 'medium',
-      questionIds: ['nope', '6addc5fdb0ff8815c044f1fa', 'x'],
+      tagIds: ['nope', '6addc5fdb0ff8815c044f1fa', 'x'],
     });
     expect(found).toEqual([
       { field: 'title', message: 'Title must be 200 characters or fewer.' },
       { field: 'day', message: 'Day must use the format YYYY-MM-DD, for example 2026-10-12.' },
       { field: 'level', message: 'Level must be one of: easy, hard.' },
-      { field: 'questionIds', message: "Questions contains an item that isn't valid." },
-      { field: 'questionIds', message: 'Questions can have at most 2 items.' },
+      { field: 'tagIds', message: "Tags contains an item that isn't valid." },
+      { field: 'tagIds', message: 'Tags can have at most 2 items.' },
     ]);
   });
 
   it('reports a missing field once as required, and a value of the wrong kind once', async () => {
-    expect(await details(QuizDto, {})).toEqual([{ field: 'title', message: 'Title is required.' }]);
-    expect(await details(QuizDto, { title: '' })).toEqual([{ field: 'title', message: 'Title is required.' }]);
-    expect(await details(QuizDto, { title: 42 })).toEqual([{ field: 'title', message: 'Title must be text.' }]);
+    expect(await details(NoteDto, {})).toEqual([{ field: 'title', message: 'Title is required.' }]);
+    expect(await details(NoteDto, { title: '' })).toEqual([{ field: 'title', message: 'Title is required.' }]);
+    expect(await details(NoteDto, { title: 42 })).toEqual([{ field: 'title', message: 'Title must be text.' }]);
   });
 
   it('humanises the text of rules it does not know, and keeps sentences written for people', async () => {
-    const found = await details(QuizDto, { title: 'Quiz', imageKey: 'BAD', colour: 'red' });
+    const found = await details(NoteDto, { title: 'Note', imageKey: 'BAD', colour: 'red' });
     expect(found).toEqual([
       { field: 'imageKey', message: 'Image must be lower-case letters.' },
       { field: 'colour', message: 'Pick a colour from the palette.' },

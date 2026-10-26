@@ -52,8 +52,9 @@ export function parseSeedArgs(argv: readonly string[]): SeedOptions {
   }
   if (values.help) throw new SeedRefusal(SEED_USAGE);
   const users = integer(values.users, 'users', 50);
-  if (users < MIN_USERS || users > MAX_USERS)
+  if (users < MIN_USERS || users > MAX_USERS) {
     throw new SeedRefusal(`--users must be between ${MIN_USERS} and ${MAX_USERS}`);
+  }
   const db = typeof values.db === 'string' ? values.db.trim() : undefined;
   if (db !== undefined && !/^[A-Za-z0-9_-]{1,63}$/.test(db)) {
     throw new SeedRefusal('--db must be 1-63 letters, digits, dashes or underscores');

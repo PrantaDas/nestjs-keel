@@ -17,26 +17,26 @@ describe('sanitizeForLog', () => {
       sanitizeForLog({
         smtp: { host: 'smtp.test', user: 'mailer', pass: 'p' },
         twilio: { accountSid: 'AC1', authToken: 't' },
-        msg91: { authKey: 'k', widgetId: 'w', baseUrl: 'https://msg91.test' },
-        wati: { token: 't' },
+        sms: { authKey: 'k', senderId: 'w', baseUrl: 'https://sms.test' },
+        stripe: { secretKey: 'sk', webhookSecret: 'whsec' },
         headers: { 'x-api-key': 'k', authkey: 'k', Authorization: 'Bearer x' },
         apiKey: 'k',
         api_key: 'k',
         APIKey: 'k',
         privateKey: 'k',
-        SETTINGS_ENCRYPTION_KEY: 'k',
+        ENCRYPTION_KEY: 'k',
       }),
     ).toEqual({
       smtp: { host: 'smtp.test', user: 'mailer', pass: '[redacted]' },
       twilio: { accountSid: 'AC1', authToken: '[redacted]' },
-      msg91: { authKey: '[redacted]', widgetId: 'w', baseUrl: 'https://msg91.test' },
-      wati: { token: '[redacted]' },
+      sms: { authKey: '[redacted]', senderId: 'w', baseUrl: 'https://sms.test' },
+      stripe: { secretKey: '[redacted]', webhookSecret: '[redacted]' },
       headers: { 'x-api-key': '[redacted]', authkey: '[redacted]', Authorization: '[redacted]' },
       apiKey: '[redacted]',
       api_key: '[redacted]',
       APIKey: '[redacted]',
       privateKey: '[redacted]',
-      SETTINGS_ENCRYPTION_KEY: '[redacted]',
+      ENCRYPTION_KEY: '[redacted]',
     });
   });
 
@@ -57,8 +57,8 @@ describe('sanitizeForLog', () => {
   });
 
   it('keeps cleared (null) secrets visible: they carry no secret', () => {
-    expect(sanitizeForLog({ msg91: { authKey: null }, smtp: { pass: undefined } })).toEqual({
-      msg91: { authKey: null },
+    expect(sanitizeForLog({ sms: { authKey: null }, smtp: { pass: undefined } })).toEqual({
+      sms: { authKey: null },
       smtp: { pass: undefined },
     });
   });

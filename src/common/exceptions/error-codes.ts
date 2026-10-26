@@ -2,14 +2,14 @@ import { HttpStatus } from '@nestjs/common';
 import { defineErrors } from './error-registry';
 
 /**
- * Code ranges:
- *   1000–1999  auth / session / device
+ * Code ranges (docs/conventions/errors.md has the full table):
+ *   1000–1999  authentication and access (1000–1099 here, 1100–1199 auth-access)
  *   2000–2999  request / validation / rate limit
- *   3000–8999  feature domains (each module declares its own range in `<module>.errors.ts`)
- *   9000–9999  system / infrastructure / third-party
+ *   3000–8999  feature modules, one block each, declared in `<module>.errors.ts`
+ *   9000–9999  system, infrastructure and outside services (9150–9199: integrations)
  */
 
-export const AuthErrors = defineErrors('auth', [1000, 1999], {
+export const AuthErrors = defineErrors('auth', [1000, 1099], {
   MISSING_BEARER_TOKEN: {
     code: 1000,
     status: HttpStatus.UNAUTHORIZED,

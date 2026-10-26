@@ -48,8 +48,9 @@ async function main(): Promise<void> {
     );
     console.log(`  Notes: ${summary.notes} (${summary.deletedNotes} in the bin, ${summary.reminders} with a reminder)`);
     console.log('\nSign in (these passwords are shown once and stored only as hashes):');
-    for (const staff of summary.staff)
+    for (const staff of summary.staff) {
       console.log(`  ${staff.role.padEnd(11)} ${staff.email}  ${summary.passwords.staff}`);
+    }
     console.log(
       `  user        ${summary.sampleUser}  ${summary.passwords.users}   (every seeded person has this password)`,
     );

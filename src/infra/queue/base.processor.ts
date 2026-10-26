@@ -55,7 +55,7 @@ export abstract class BaseProcessor<TData = unknown, TResult = unknown> extends 
 
 /**
  * Whether BullMQ should retry after this error. False for UnrecoverableError, for errors that
- * carry `retryable: false` (integration exceptions, WatiError, …) and for INTEGRATION_NOT_CONFIGURED
+ * carry `retryable: false` (integration exceptions, permanent provider answers) and for INTEGRATION_NOT_CONFIGURED
  * (a retry minutes later cannot fix configuration). Anything else is retried (BullMQ's default).
  */
 export function isRetryable(error: unknown): boolean {

@@ -91,7 +91,7 @@ describe('BaseProcessor.process: permanent failures skip the remaining attempts'
       'retryable: false (permanent provider answer, unknown outcome)',
       Object.assign(new Error('400'), { retryable: false }),
     ],
-    ['INTEGRATION_NOT_CONFIGURED', new IntegrationNotConfiguredException('WATI WhatsApp')],
+    ['INTEGRATION_NOT_CONFIGURED', new IntegrationNotConfiguredException('Twilio SMS')],
   ])('%s → UnrecoverableError with the same message', async (_label, error) => {
     const thrown = await new Throwing(error).process(job).catch((e: unknown) => e);
     expect(thrown).toBeInstanceOf(UnrecoverableError);

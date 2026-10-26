@@ -42,7 +42,7 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | List size | Tags can have at most 20 items. |
 | No repeats | Tags can't contain the same item twice. |
 | Day | Day must use the format YYYY-MM-DD, for example 2026-10-12. |
-| Date and time | Remind at must be a date and time with a time zone, for example 2026-10-12T14:30:00Z. |
+| Date and time | Reminder time must be a date and time with a time zone, for example 2026-10-12T14:30:00Z. |
 | Time zone | Time zone must be a name such as Europe/London. |
 | Phone number | Phone number must be a valid mobile number with its country code, for example +14155550123. |
 | Nested object | Reminder isn't in the right format. |

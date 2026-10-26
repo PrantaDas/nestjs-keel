@@ -7,7 +7,7 @@ import { REDIS_CACHE } from '@/infra/redis/redis.constants';
 
 export interface CacheSetOptions {
   ttlSeconds?: number;
-  /** Tags let one call invalidate a group of keys, e.g. `quiz:123`. */
+  /** Tags let one call invalidate a group of keys, e.g. `note:123`. */
   tags?: string[];
 }
 

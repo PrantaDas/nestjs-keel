@@ -3,7 +3,6 @@ import { Module } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import type { Request, Response } from 'express';
-import { join } from 'node:path';
 import { AccessValidator } from '@/common/auth/access-validator';
 import { TokenService } from '@/common/auth/token.service';
 import { AuthErrors, AuthException } from '@/common/exceptions';
@@ -20,9 +19,6 @@ export interface GraphqlContext {
   loaders: RequestLoaders;
 }
 
-/** The committed SDL (`schema.gql`), regenerated on every dev start and by `pnpm graphql:schema`. */
-export const SCHEMA_FILE = join(process.cwd(), 'schema.gql');
-
 /** The parts of a graphql-ws connection context this module reads and writes. */
 interface WsConnection {
   connectionParams?: Record<string, unknown>;
@@ -33,8 +29,9 @@ type WsExtra = { headers?: Record<string, string> };
 
 /**
  * Code-first GraphQL on Apollo (docs/conventions/graphql.md):
- *  - the schema is generated from the resolvers and committed as `schema.gql` (sorted, so diffs
- *    stay readable); production builds it in memory and never writes files;
+ *  - the schema is generated from the resolvers in memory; the process never writes files (the
+ *    image is read-only for its user). The committed `schema.gql` (sorted, so diffs stay readable)
+ *    comes from `pnpm graphql:schema`, and a unit test fails when it is stale;
  *  - the same guards as REST (global JwtAuthGuard / RolesGuard handle the `graphql` context), the
  *    same ValidationPipe on `@Args` DTOs, and errors in the same contract (graphql-errors.ts);
  *  - depth and complexity limits, a fresh DataLoader registry per operation;
@@ -56,7 +53,7 @@ type WsExtra = { headers?: Record<string, string> };
         access: AccessValidator,
       ): ApolloDriverConfig => ({
         path: config.path,
-        autoSchemaFile: app.isProduction ? true : SCHEMA_FILE,
+        autoSchemaFile: true,
         sortSchema: true,
         introspection: config.introspection,
         graphiql: !app.isProduction && config.introspection,

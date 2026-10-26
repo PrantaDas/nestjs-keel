@@ -33,8 +33,7 @@ export function collectResolvers(root: Type<unknown>): Type<unknown>[] {
 }
 
 /**
- * The SDL exactly as the graphql process writes `schema.gql` in development (same header, sorted).
- * Used by `pnpm graphql:schema` and the test that fails when the committed file is stale.
+ * The SDL of the schema the graphql process builds (sorted, with the generated-file header). Used by `pnpm graphql:schema` and the test that fails when the committed file is stale.
  */
 export async function buildSchemaSdl(rootModule: Type<unknown>): Promise<string> {
   const builder = await NestFactory.createApplicationContext(GraphQLSchemaBuilderModule, { logger: false });

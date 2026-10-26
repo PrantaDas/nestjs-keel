@@ -7,7 +7,8 @@ services and guards as REST. ADR: [0010](../adr/0010-graphql-separate-process.md
 
 Types come from decorated classes (`@ObjectType`, `@InputType`, `@Field`); `schema.gql` is generated
 (`pnpm graphql:schema`, sorted) and committed so reviews show every schema change.
-`test/unit/graphql-schema.spec.ts` fails when it is stale. Production builds the schema in memory.
+`test/unit/graphql-schema.spec.ts` fails when it is stale. The running process builds the schema in
+memory and never writes files.
 
 ## Resolvers
 

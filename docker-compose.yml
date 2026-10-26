@@ -1,7 +1,7 @@
 # Local stack. `pnpm infra:up` starts the infrastructure only (the app runs on the host with
 # `pnpm dev:*`); `docker compose --profile app up -d --build` also runs every process from the
-# production image, and `--profile transport` adds RabbitMQ. Host ports are offset (27047, 6389,
-# 6390) so they never clash with a MongoDB or Redis already installed on the machine.
+# production image. Host ports are offset (27047, 6389, 6390) so they never clash with a MongoDB or
+# Redis already installed on the machine.
 name: nest-boilerplate
 
 x-app: &app
@@ -86,9 +86,9 @@ services:
     entrypoint: ['/bin/sh', '-c', 'until curl -sf -X PUT http://s3:8333/app-local; do sleep 1; done']
     restart: 'no'
 
+  # Inter-service transport (only used when RABBITMQ_URL is set): http://localhost:15672 (guest / guest).
   rabbitmq:
     image: rabbitmq:4.1-management-alpine
-    profiles: ['transport']
     ports: ['5672:5672', '15672:15672']
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']

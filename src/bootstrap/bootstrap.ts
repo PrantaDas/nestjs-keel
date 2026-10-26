@@ -2,8 +2,11 @@ import { INestApplicationContext, Logger as NestLogger, Type } from '@nestjs/com
 import type { ConfigType } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import type { MicroserviceOptions } from '@nestjs/microservices';
 import { Logger } from 'nestjs-pino';
+import { grpcServerOptions } from '@/infra/transport/grpc/grpc-server';
 import { ApiModule } from '@/app/api.module';
+import { GrpcAppModule } from '@/app/grpc.module';
 import { GraphqlAppModule } from '@/app/graphql.module';
 import { SocketModule } from '@/app/socket.module';
 import { appConfig, runtimeConfig } from '@/config/configuration';
@@ -69,6 +72,27 @@ export async function startGraphql(): Promise<void> {
   const { graphqlPort } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
   await app.listen(graphqlPort, '0.0.0.0');
   logger.log(`GraphQL listening on :${graphqlPort}`);
+}
+
+/**
+ * gRPC process: a Nest microservice on GRPC_PORT serving every service declared in proto/ that a
+ * loaded module implements. No HTTP listener; liveness is the gRPC port itself plus the heartbeat.
+ */
+export async function createGrpcApp(port?: number): Promise<NestExpressApplication> {
+  const app = await NestFactory.create<NestExpressApplication>(GrpcAppModule, { ...factoryOptions, bodyParser: false });
+  app.useLogger(app.get(Logger));
+  const { grpcPort } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+  app.connectMicroservice<MicroserviceOptions>(grpcServerOptions(port ?? grpcPort), { inheritAppConfig: true });
+  return app;
+}
+
+export async function startGrpc(): Promise<void> {
+  const app = await createGrpcApp();
+  installGracefulShutdown(app, 'gRPC');
+  await app.startAllMicroservices();
+  await app.init();
+  const { grpcPort } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+  logger.log(`gRPC listening on :${grpcPort}`);
 }
 
 /** Worker and cron: DI container only, no HTTP server. */

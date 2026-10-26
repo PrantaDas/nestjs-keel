@@ -35,7 +35,7 @@
     "test:tz:e2e": "for tz in Asia/Dubai Pacific/Kiritimati; do echo \"== server TZ=$tz\"; TZ=$tz NODE_OPTIONS='--experimental-vm-modules --no-warnings=ExperimentalWarning' jest --config test/jest-e2e.config.js --maxWorkers=3 --workerIdleMemoryLimit=1500MB --silent || exit 1; done",
     "test:smoke": "NODE_OPTIONS='--experimental-vm-modules --no-warnings=ExperimentalWarning' jest --config test/jest-smoke.config.js --runInBand",
     "test:load": "k6 run test/load/baseline.k6.js",
-    "infra:up": "docker compose up -d --wait mongo redis-core redis-cache mailpit s3 && docker compose up -d s3-init",
+    "infra:up": "docker compose up -d --wait mongo redis-core redis-cache mailpit s3 rabbitmq && docker compose up -d s3-init",
     "infra:down": "docker compose down",
     "migrate": "nest build && node --enable-source-maps dist/cli/migrate.js",
     "migrate:dist": "node --enable-source-maps dist/cli/migrate.js",
@@ -46,9 +46,10 @@
     "openapi:export": "nest build && node --enable-source-maps dist/cli/openapi-export.js",
     "messages:export": "nest build && node --enable-source-maps dist/cli/messages-export.js",
     "graphql:schema": "nest build && node --enable-source-maps dist/cli/graphql-schema.js",
-    "proto:gen": "protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=src/infra/transport/grpc/generated --ts_proto_opt=nestJs=true,useDate=false,esModuleInterop=true,outputServices=grpc-js -I proto proto/*.proto",
+    "proto:gen": "buf generate && prettier --write src/infra/transport/grpc/generated",
     "g:module": "node scripts/generate-module.mjs",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "proto:lint": "buf lint"
   },
   "lint-staged": {
     "*.ts": [
@@ -126,6 +127,7 @@
     "twilio": "6.2.0"
   },
   "devDependencies": {
+    "@bufbuild/buf": "1.73.0",
     "@commitlint/cli": "21.2.3",
     "@commitlint/config-conventional": "21.2.3",
     "@eslint/js": "10.0.1",

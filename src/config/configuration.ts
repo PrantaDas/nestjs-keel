@@ -284,4 +284,9 @@ export const features = {
   stripe: (): boolean => Boolean(env('STRIPE_SECRET_KEY')),
   rabbitmq: (): boolean => Boolean(env('RABBITMQ_URL')),
   otel: (): boolean => bool('OTEL_ENABLED'),
+  /** Domain events also go to the RabbitMQ topic exchange (`EVENTS_EXTERNAL=rabbitmq`). */
+  externalEvents: (): boolean => env('EVENTS_EXTERNAL') === 'rabbitmq',
+  /** How a port is reached: in-process unless `TRANSPORT_ROUTES` names a driver for it. */
+  transportRoute: (port: string): TransportDriver =>
+    (pairs('TRANSPORT_ROUTES')[port] as TransportDriver) || 'inprocess',
 };

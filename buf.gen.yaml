@@ -1,0 +1,14 @@
+# TypeScript interfaces and Nest decorators from proto/*.proto (ts-proto, run locally: no network).
+# Wire encoding is done at runtime by @grpc/proto-loader, so no encode/decode code is generated.
+version: v2
+plugins:
+  - local: ./node_modules/.bin/protoc-gen-ts_proto
+    out: src/infra/transport/grpc/generated
+    opt:
+      - nestJs=true
+      - outputEncodeMethods=false
+      - outputJsonMethods=false
+      - outputPartialMethods=false
+      - useDate=false
+      - addGrpcMetadata=false
+      - esModuleInterop=true

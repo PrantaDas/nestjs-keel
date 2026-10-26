@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+// The examples (notes) module's port `NotesStats` as a network service: the worked example of
+// extracting a module (docs/architecture/microservices.md). Field names follow proto style;
+// ts-proto turns them into camelCase TypeScript (`owner_ids` → `ownerIds`).
+package examples.v1;
+
+service NotesStatsService {
+  // Live notes per owner. A read: safe to retry.
+  rpc CountByOwners(CountByOwnersRequest) returns (CountByOwnersResponse);
+}
+
+message CountByOwnersRequest {
+  repeated string owner_ids = 1;
+}
+
+message CountByOwnersResponse {
+  map<string, int32> counts = 1;
+}

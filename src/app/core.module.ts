@@ -14,6 +14,7 @@ import { LoggerModule } from '@/infra/logger/logger.module';
 import { QueueModule } from '@/infra/queue/queue.module';
 import { RealtimeModule } from '@/infra/realtime/realtime.module';
 import { RedisModule } from '@/infra/redis/redis.module';
+import { TransportModule } from '@/infra/transport/transport.module';
 import { IntegrationsModule } from '@/integrations/integrations.module';
 
 /** Infrastructure shared by every process (api, graphql, socket, worker, cron). */
@@ -37,6 +38,8 @@ import { IntegrationsModule } from '@/integrations/integrations.module';
     EventsModule,
     // Any process may publish GraphQL subscription events; only the graphql process serves them.
     GraphqlPubSubModule,
+    // gRPC / RabbitMQ clients and remote ports; connect on first use only.
+    TransportModule,
     AuthCoreModule,
     IntegrationsModule,
   ],

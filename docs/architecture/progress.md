@@ -35,3 +35,10 @@ Short, append-only notes on what was built per slice and what was decided along 
   key), prices, checkout, payment intents, portal, admin products; `POST /api/webhooks/stripe`
   verified against the raw body, idempotent by event id, recorded, applied by the worker through
   the `stripe-events` queue; forward-only payment states and newest-wins subscription state.
+- Slice 11 (transport): `MessageTransport` with gRPC (proto/ + ts-proto types via buf, dynamic
+  stubs, deadlines, retries for idempotent calls, breaker) and RabbitMQ (topic exchange, publisher
+  confirms, direct reply-to RPC, manual ack, dead-letter queues) implementations; `TRANSPORT_ROUTES`
+  picks per port; the examples module's `NotesStats` port served by a gRPC process (`main.grpc.ts`)
+  and by RabbitMQ RPC in the worker; outbox events published to RabbitMQ with `EVENTS_EXTERNAL`.
+- Found while building: durable RPC queue names must carry the exchange name, or environments (and
+  test runs) sharing a broker collide on queue arguments.

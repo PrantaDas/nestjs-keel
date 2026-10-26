@@ -6,6 +6,7 @@ allowBuilds:
   '@scarf/scarf': false
   msgpackr-extract: true
   protobufjs: true
+  '@bufbuild/buf': true
   '@apollo/protobufjs': false
 
 # @nestjs/platform-socket.io pins its own socket.io; keep a single copy so adapter types match.

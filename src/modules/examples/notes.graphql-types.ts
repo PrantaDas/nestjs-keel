@@ -4,6 +4,7 @@
  * types are the REST DTOs themselves (`CreateNoteInput`, `UpdateNoteInput`), so validation is shared.
  */
 import { Field, ID, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { PageInfoType } from '@/infra/graphql/page-info.type';
 
 @ObjectType('NoteReminder')
 export class NoteReminderType {
@@ -69,27 +70,6 @@ export class NoteType {
 
   /** Not stored on the view: resolved by `NotesResolver.owner` through a per-request DataLoader. */
   ownerId: string;
-}
-
-@ObjectType('PageInfo')
-export class PageInfoType {
-  @Field(() => Int)
-  page: number;
-
-  @Field(() => Int)
-  limit: number;
-
-  @Field(() => Int)
-  totalDocs: number;
-
-  @Field(() => Int)
-  totalPages: number;
-
-  @Field(() => Boolean)
-  hasNextPage: boolean;
-
-  @Field(() => Boolean)
-  hasPrevPage: boolean;
 }
 
 @ObjectType('NotePage')

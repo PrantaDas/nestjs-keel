@@ -87,7 +87,7 @@ export class NoteV2Response {
   updatedAt: string;
 }
 
-export class TagCountResponse {
+export class NoteTagCountResponse {
   @ApiProperty({ type: String, example: 'home' })
   tag: string;
 

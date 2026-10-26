@@ -22,7 +22,7 @@ import { PaginatedResult } from '@/common/dto/pagination.dto';
 import { ParseObjectIdPipe } from '@/common/pipes/parse-object-id.pipe';
 import { ApiEnvelope, ApiEnvelopeArray, ApiNoContent, ApiPaginated, ApiStandardErrors } from '@/common/swagger';
 import { CreateNoteDto, NoteQueryDto, UpdateNoteDto } from './dto/note.dto';
-import { NoteResponse, NoteV2Response, TagCountResponse } from './dto/note.responses';
+import { NoteResponse, NoteV2Response, NoteTagCountResponse } from './dto/note.responses';
 import { NotesErrors } from './notes.errors';
 import { NotesService } from './notes.service';
 import { toNoteV2View, toNoteView } from './notes.views';
@@ -79,7 +79,7 @@ export class NotesController {
 
   @Get('tags')
   @ApiOperation({ summary: 'My tags with how many notes use each', operationId: 'notesTags' })
-  @ApiEnvelopeArray(TagCountResponse)
+  @ApiEnvelopeArray(NoteTagCountResponse)
   @ResponseMessage('Tags loaded.')
   tags(@CurrentUser('id') ownerId: string) {
     return this.notes.tags(ownerId);

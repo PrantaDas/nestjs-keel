@@ -8,13 +8,12 @@
  *  - a state change and its domain event commit together (`TransactionService` + outbox);
  *  - side effects after the commit are best effort: cache invalidation and realtime pushes never
  *    fail the request;
- *  - other modules are reached through ports (`Notifier`), and this module provides one
- *    (`NotesStats`) for others.
+ *  - other modules are reached through ports (`Notifier`); what others need from this module
+ *    goes through a port too (`NotesStats`, see notes-stats.adapter.ts).
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { isValidObjectId, Types } from 'mongoose';
 import { Notifier } from '@/common/contracts/notifier.contract';
-import { NotesStats } from '@/common/contracts/notes-stats.contract';
 import { PaginatedResult } from '@/common/dto/pagination.dto';
 import { TimeService } from '@/common/time/time.service';
 import type { LocalDateTime } from '@/common/time/time.types';
@@ -40,7 +39,7 @@ const DAY_MS = 86_400_000;
 const TAGS_CACHE_SECONDS = 300;
 
 @Injectable()
-export class NotesService extends NotesStats {
+export class NotesService {
   private readonly logger = new Logger(NotesService.name);
 
   constructor(
@@ -52,9 +51,7 @@ export class NotesService extends NotesStats {
     private readonly graphqlEvents: GraphqlPubSub,
     private readonly notifier: Notifier,
     private readonly time: TimeService,
-  ) {
-    super();
-  }
+  ) {}
 
   // ── Queries ─────────────────────────────────────────────────────────────
 
@@ -193,7 +190,7 @@ export class NotesService extends NotesStats {
     return removed;
   }
 
-  // ── NotesStats port (used by the identity module's admin detail) ────────
+  // ── Counts for other modules (served through the `NotesStats` port adapter) ─
 
   async countByOwners(ownerIds: readonly string[]): Promise<Map<string, number>> {
     const valid = ownerIds.filter((id) => isValidObjectId(id));

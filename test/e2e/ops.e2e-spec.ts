@@ -43,7 +43,12 @@ describe('Ops (e2e)', () => {
     const overview = await t.http.get(`${API}/admin/ops/queues`).set(admin.auth).expect(200);
     expect(overview.body.data.find((q: { name: string }) => q.name === QueueName.NOTES)).toMatchObject({
       owner: 'examples',
+      enabled: true,
       counts: { failed: 1 },
+    });
+    // The e2e environment sets a Stripe key, so the payments queue is part of this deployment.
+    expect(overview.body.data.find((q: { name: string }) => q.name === QueueName.STRIPE_EVENTS)).toMatchObject({
+      enabled: true,
     });
 
     const failed = await t.http.get(`${API}/admin/ops/queues/${QueueName.NOTES}/failed`).set(admin.auth).expect(200);

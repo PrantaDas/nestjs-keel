@@ -89,8 +89,9 @@ describe('smoke', () => {
   authed(ADMIN_TOKEN)('has a worker listening on every background queue', async () => {
     const res = await api('/api/v1/admin/ops/queues', ADMIN_TOKEN);
     expect(res.status).toBe(200);
-    const { data } = (await res.json()) as { data: { name: string; workers: number | null }[] };
+    const { data } = (await res.json()) as { data: { name: string; enabled: boolean; workers: number | null }[] };
     // null: the Redis plan does not allow counting connections; the heartbeat check covers it.
-    expect(data.filter((q) => q.workers === 0).map((q) => q.name)).toEqual([]);
+    // Queues of a switched-off feature (no Stripe key) have no worker on purpose.
+    expect(data.filter((q) => q.enabled && q.workers === 0).map((q) => q.name)).toEqual([]);
   });
 });

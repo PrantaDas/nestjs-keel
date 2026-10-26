@@ -7,7 +7,7 @@ import Redis from 'ioredis';
 import { RequestContext } from '@/common/context/request-context';
 import { PaginatedResult } from '@/common/dto/pagination.dto';
 import { TimeService } from '@/common/time/time.service';
-import { redisConfig } from '@/config/configuration';
+import { features, redisConfig } from '@/config/configuration';
 import { heartbeatPattern, type ProcessHeartbeat, type ProcessMode } from '@/infra/heartbeat/heartbeat.service';
 import { policyFor } from '@/infra/queue/queue-policies';
 import { REDIS_CORE } from '@/infra/redis/redis.constants';
@@ -23,6 +23,8 @@ export interface QueueOverview {
   name: QueueName;
   purpose: string;
   owner: string;
+  /** False when the queue's feature is switched off (e.g. no Stripe key): no worker is expected. */
+  enabled: boolean;
   paused: boolean;
   counts: { waiting: number; active: number; delayed: number; failed: number };
   /** From the workers' per-minute metrics, so retention limits do not cut it short. */
@@ -122,6 +124,7 @@ export class OpsService {
           name,
           purpose: policy.purpose,
           owner: policy.owner,
+          enabled: policy.feature ? features[policy.feature]() : true,
           paused,
           counts: {
             waiting: (counts.waiting ?? 0) + (counts.prioritized ?? 0),

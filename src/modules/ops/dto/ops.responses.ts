@@ -33,6 +33,12 @@ export class OpsQueueOverviewResponse implements QueueOverview {
   @ApiProperty({ type: String, description: 'Module that owns the queue' })
   owner: string;
 
+  @ApiProperty({
+    type: Boolean,
+    description: 'False when the feature the queue belongs to is switched off (no worker is expected)',
+  })
+  enabled: boolean;
+
   @ApiProperty({ type: Boolean })
   paused: boolean;
 

@@ -43,6 +43,11 @@ export interface QueuePolicy {
   maxStalledCount?: number;
   /** Why re-running a job (retry, stalled, duplicate) cannot repeat a side effect. */
   idempotency: string;
+  /**
+   * Feature switch the queue belongs to (ADR 0008). While it is off no process registers a
+   * producer or a worker, so ops reports the queue as disabled instead of "no worker".
+   */
+  feature?: 'stripe';
 }
 
 /**
@@ -98,6 +103,7 @@ export const QUEUE_POLICIES: Readonly<Record<QueueName, QueuePolicy>> = Object.f
     backoffMs: 10 * SECOND,
     concurrency: 2,
     idempotency: 'one job per Stripe event id; handlers are conditional (status transitions)',
+    feature: 'stripe',
   },
 });
 

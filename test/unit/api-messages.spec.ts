@@ -140,7 +140,7 @@ function literalMessages(): Array<{ where: string; message: string }> {
     readFileSync(join(ROOT, file), 'utf8')
       .split('\n')
       .forEach((line, index) => {
-        if (/@[A-Z]\w*\(/.test(line) || /^\s*(\*|\/\/)/.test(line)) return;
+        if (/@[A-Z]\w*\(/.test(line) || /^\s*(\*|\/\/|\/\*)/.test(line)) return;
         const where = `${file}:${index + 1}`;
         for (const match of line.matchAll(messageLiteral)) found.push({ where, message: clean(match[2]) });
         if (helpers && PROBLEM_HELPERS.test(line) && !/\b(function|const|=>)\b.*\(\s*\w+:/.test(line)) {

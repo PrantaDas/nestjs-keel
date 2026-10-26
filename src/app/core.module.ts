@@ -5,6 +5,7 @@ import { AuthCoreModule } from '@/common/auth/auth-core.module';
 import { TimeModule } from '@/common/time/time.module';
 import { AppConfigModule } from '@/config/config.module';
 import { CacheModule } from '@/infra/cache/cache.module';
+import { EventsModule } from '@/infra/events/events.module';
 import { CronInfraModule } from '@/infra/cron/cron-runs';
 import { DatabaseModule } from '@/infra/database/database.module';
 import { LifecycleModule } from '@/infra/lifecycle/lifecycle.module';
@@ -12,6 +13,7 @@ import { LoggerModule } from '@/infra/logger/logger.module';
 import { QueueModule } from '@/infra/queue/queue.module';
 import { RealtimeModule } from '@/infra/realtime/realtime.module';
 import { RedisModule } from '@/infra/redis/redis.module';
+import { IntegrationsModule } from '@/integrations/integrations.module';
 
 /** Infrastructure shared by every process (api, graphql, socket, worker, cron). */
 @Module({
@@ -30,7 +32,10 @@ import { RedisModule } from '@/infra/redis/redis.module';
     CacheModule,
     QueueModule,
     RealtimeModule,
+    // Domain events: every process writes to the outbox; only the worker relays (OutboxRelayModule).
+    EventsModule,
     AuthCoreModule,
+    IntegrationsModule,
   ],
 })
 export class CoreModule {}

@@ -54,36 +54,74 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 
 | Code | Key | HTTP | Who sees it | Message |
 | --- | --- | --- | --- | --- |
-| 1000 | `MISSING_BEARER_TOKEN` | 401 | Internal | Please sign in to continue. |
-| 1001 | `INVALID_TOKEN` | 401 | Internal | Your sign-in is no longer valid. Please sign in again. |
-| 1002 | `TOKEN_EXPIRED` | 401 | Internal | Your session has expired. Please sign in again. |
-| 1003 | `FORBIDDEN` | 403 | Internal | You don't have permission to do this. |
+| 1000 | `MISSING_BEARER_TOKEN` | 401 | App + admin | Please sign in to continue. |
+| 1001 | `INVALID_TOKEN` | 401 | App + admin | Your sign-in is no longer valid. Please sign in again. |
+| 1002 | `TOKEN_EXPIRED` | 401 | App + admin | Your session has expired. Please sign in again. |
+| 1003 | `FORBIDDEN` | 403 | Admin | You don't have permission to do this. |
 | 1004 | `UNAUTHENTICATED` | 401 | App + admin | Please sign in to continue. |
 
 ### Sessions and access (1100–1102)
 
 | Code | Key | HTTP | Who sees it | Message |
 | --- | --- | --- | --- | --- |
-| 1100 | `SESSION_REVOKED` | 401 | Internal | Your session has ended. Please sign in again. |
-| 1101 | `ACCOUNT_DISABLED` | 401 | Internal | This account is disabled. Please contact support. |
+| 1100 | `SESSION_REVOKED` | 401 | App + admin | Your session has ended. Please sign in again. |
+| 1101 | `ACCOUNT_DISABLED` | 401 | App + admin | This account is disabled. Please contact support. |
 | 1102 | `INVALID_API_KEY` | 401 | Internal | The service credentials are missing or not valid. |
 
-### Requests and validation (2000–2011)
+### Requests and validation (2000–2015)
 
 | Code | Key | HTTP | Who sees it | Message |
 | --- | --- | --- | --- | --- |
-| 2000 | `VALIDATION_FAILED` | 400 | Internal | Some of the details aren't valid. Please check them and try again. |
+| 2000 | `VALIDATION_FAILED` | 400 | App + admin | Some of the details aren't valid. Please check them and try again. |
 | 2001 | `BAD_REQUEST` | 400 | App + admin | We couldn't process this request. Please check it and try again. |
-| 2002 | `MALFORMED_JSON` | 400 | Internal | We couldn't read what was sent. Please try again. |
-| 2003 | `INVALID_ID` | 400 | Internal | This link isn't valid. Please check it and try again. |
+| 2002 | `MALFORMED_JSON` | 400 | App + admin | We couldn't read what was sent. Please try again. |
+| 2003 | `INVALID_ID` | 400 | Admin | This link isn't valid. Please check it and try again. |
 | 2004 | `ROUTE_NOT_FOUND` | 404 | App + admin | We couldn't find that. Please check the address, or update the app if it's out of date. |
 | 2005 | `RESOURCE_NOT_FOUND` | 404 | App + admin | We couldn't find what you were looking for. |
 | 2006 | `DUPLICATE_RESOURCE` | 409 | App + admin | This already exists. Change it and try again. |
 | 2007 | `PAYLOAD_TOO_LARGE` | 413 | App + admin | What you sent is too large. Please make it smaller and try again. |
-| 2008 | `RATE_LIMITED` | 429 | Internal | You're going a little fast. Please wait a moment and try again. |
+| 2008 | `RATE_LIMITED` | 429 | App + admin | You're going a little fast. Please wait a moment and try again. |
 | 2009 | `METHOD_NOT_ALLOWED` | 405 | App + admin | This action isn't available here. |
 | 2010 | `UNSUPPORTED_MEDIA_TYPE` | 415 | App + admin | This type of content isn't supported. Please try again from the app or the admin panel. |
 | 2011 | `CLIENT_CLOSED_REQUEST` | 499 | Internal | The request was cancelled before it finished. |
+| 2012 | `IDEMPOTENCY_IN_PROGRESS` | 409 | Internal | This request is still being processed. Please wait a moment before trying again. |
+| 2013 | `IDEMPOTENCY_KEY_REUSED` | 422 | Internal | This request reference was already used with different details. Send a new reference. |
+| 2014 | `INVALID_IDEMPOTENCY_KEY` | 400 | Internal | The request reference isn't valid. Use 8 to 128 letters, digits, dashes or underscores. |
+| 2015 | `ENDPOINT_RETIRED` | 410 | Internal | This version of the app is no longer supported. Please update the app. |
+
+### Identity (3000–3021)
+
+| Code | Key | HTTP | Who sees it | Message |
+| --- | --- | --- | --- | --- |
+| 3000 | `EMAIL_TAKEN` | 409 | App | An account with this email already exists. Sign in instead, or use another email. |
+| 3001 | `PHONE_TAKEN` | 409 | App | This phone number is already used by another account. |
+| 3002 | `INVALID_CREDENTIALS` | 401 | App | The email or password is incorrect. |
+| 3003 | `ACCOUNT_LOCKED` | 429 | App | Too many sign-in attempts. Your account is locked for a few minutes, please try again later. |
+| 3004 | `ACCOUNT_DEACTIVATED` | 403 | App | This account is deactivated. Contact support to restore it. |
+| 3005 | `INVALID_REFRESH_TOKEN` | 401 | App | Your sign-in has expired. Please sign in again. |
+| 3006 | `REFRESH_TOKEN_REUSED` | 401 | App | For your security, this sign-in was ended on every device that used it. Please sign in again. |
+| 3007 | `OTP_INVALID` | 400 | App | That code isn't right or has expired. Check it, or ask for a new one. |
+| 3008 | `OTP_TOO_MANY_ATTEMPTS` | 429 | App | Too many wrong codes. Please ask for a new code. |
+| 3009 | `OTP_RESEND_TOO_SOON` | 429 | App | Please wait a moment before asking for another code. |
+| 3010 | `OTP_SEND_LIMIT` | 429 | App | Too many codes were requested. Please try again in an hour. |
+| 3011 | `EMAIL_ALREADY_VERIFIED` | 409 | App | Your email address is already verified. |
+| 3012 | `CONTACT_UNCHANGED` | 400 | App | This is already the address on your account. |
+| 3013 | `PASSWORD_INCORRECT` | 400 | App | The current password is incorrect. |
+| 3014 | `USER_NOT_FOUND` | 404 | Admin | We couldn't find that account. |
+| 3015 | `SESSION_NOT_FOUND` | 404 | App | We couldn't find that sign-in. It may have ended already. |
+| 3016 | `CANNOT_CHANGE_SELF` | 403 | Admin | You can't change the role of, or disable, your own account. |
+| 3017 | `ROLE_CHANGE_FORBIDDEN` | 403 | Admin | Only a super admin can change roles or manage other admins. |
+| 3018 | `LAST_SUPER_ADMIN` | 409 | Admin | The last super admin can't be demoted or disabled. Make someone else a super admin first. |
+| 3019 | `AVATAR_UPLOAD_MISSING` | 400 | App | We couldn't find the uploaded picture. Please upload it again. |
+| 3020 | `DELETION_NOT_PENDING` | 409 | App | There is no pending account deletion to cancel. |
+| 3021 | `ACCOUNT_DELETION_PENDING` | 409 | App | This account is already scheduled for deletion. |
+
+### Notifications (4000–4001)
+
+| Code | Key | HTTP | Who sees it | Message |
+| --- | --- | --- | --- | --- |
+| 4000 | `INBOX_ITEM_NOT_FOUND` | 404 | App | We couldn't find that notification. |
+| 4001 | `TOO_MANY_RECIPIENTS` | 400 | Admin | Send to at most 10,000 people at once, or use a topic. |
 
 ### System (9000–9102)
 
@@ -91,8 +129,8 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | --- | --- | --- | --- | --- |
 | 9000 | `INTERNAL_ERROR` | 500 | App + admin | Something went wrong on our side. Please try again in a moment. |
 | 9001 | `SERVICE_UNAVAILABLE` | 503 | App + admin | Our service is busy right now. Please try again in a moment. |
-| 9002 | `INTEGRATION_NOT_CONFIGURED` | 503 | Internal | This feature isn't set up yet, so it can't be used right now. Please contact support. |
-| 9003 | `INTEGRATION_FAILED` | 502 | Internal | We couldn't complete this right now. Please try again in a moment. |
+| 9002 | `INTEGRATION_NOT_CONFIGURED` | 503 | App + admin | This feature isn't set up yet, so it can't be used right now. Please contact support. |
+| 9003 | `INTEGRATION_FAILED` | 502 | Admin | We couldn't complete this right now. Please try again in a moment. |
 | 9004 | `LOCK_NOT_ACQUIRED` | 409 | Internal | Someone else is updating this right now. Please try again in a moment. |
 | 9100 | `DATABASE_UNAVAILABLE` | 503 | App + admin | Our service is busy right now. Please try again in a moment. |
 | 9101 | `REDIS_UNAVAILABLE` | 503 | App + admin | Our service is busy right now. Please try again in a moment. |
@@ -111,17 +149,59 @@ When two requests save the same unique value at the same moment, the second gets
 
 | Field | Message |
 | --- | --- |
+| `email` | An account with this email already exists. Sign in instead, or use another email. |
+| `phone` | This phone number is already used by another account. |
 
 ## Success messages
 
-### App (2 routes)
+### App (33 routes)
 
 | Method | Route | Message |
 | --- | --- | --- |
 | GET | `/api/health` | Service is running. |
 | GET | `/api/ready` | — (raw response (file, stream or probe)) |
+| POST | `/api/v1/auth/email/verify` | Your email address is confirmed. |
+| POST | `/api/v1/auth/email/verify/request` | A code is on its way to your email. |
+| POST | `/api/v1/auth/login` | Signed in. |
+| POST | `/api/v1/auth/logout` | Signed out. |
+| POST | `/api/v1/auth/logout-all` | Signed out on every device. |
+| POST | `/api/v1/auth/otp/request` | If an account uses this address, a code is on its way. |
+| POST | `/api/v1/auth/otp/verify` | Signed in. |
+| POST | `/api/v1/auth/password/forgot` | If an account uses this email, a reset code is on its way. |
+| POST | `/api/v1/auth/password/reset` | Your password was changed. Sign in with the new one. |
+| POST | `/api/v1/auth/refresh` | Session refreshed. |
+| POST | `/api/v1/auth/register` | Welcome! Your account is ready. Check your email for a code to confirm your address. |
+| GET | `/api/v1/auth/sessions` | Signed-in devices loaded. |
+| DELETE | `/api/v1/auth/sessions/{sessionId}` | — (no content (204)) |
+| GET | `/api/v1/notifications` | Notifications loaded. |
+| POST | `/api/v1/notifications/{id}/read` | Marked as read. |
+| POST | `/api/v1/notifications/read-all` | All notifications marked as read. |
+| GET | `/api/v1/notifications/unread-count` | Unread count loaded. |
+| GET | `/api/v1/users/me` | Account loaded. |
+| PATCH | `/api/v1/users/me` | Profile updated. |
+| DELETE | `/api/v1/users/me/avatar` | Profile picture removed. |
+| PUT | `/api/v1/users/me/avatar` | Profile picture updated. |
+| POST | `/api/v1/users/me/avatar/upload-url` | Upload link ready. |
+| POST | `/api/v1/users/me/deactivate` | Your account is deactivated. Sign in again any time to restore it. |
+| DELETE | `/api/v1/users/me/deletion` | Your account will not be deleted. |
+| POST | `/api/v1/users/me/deletion` | Your account will be deleted at the date shown. Sign in before then to keep it. |
+| PUT | `/api/v1/users/me/device` | — (no content (204)) |
+| POST | `/api/v1/users/me/email` | A code is on its way to the new address. |
+| POST | `/api/v1/users/me/email/confirm` | Your email address was changed. |
+| POST | `/api/v1/users/me/password` | Password changed. Your other devices were signed out. |
+| POST | `/api/v1/users/me/phone` | A code is on its way to the new number. |
+| POST | `/api/v1/users/me/phone/confirm` | Your phone number was changed. |
 
-### Admin (0 routes)
+### Admin (9 routes)
 
 | Method | Route | Message |
 | --- | --- | --- |
+| GET | `/api/v1/admin/audit-logs` | Activity log loaded. |
+| POST | `/api/v1/admin/notifications/send` | Notification queued. |
+| POST | `/api/v1/admin/notifications/topics/{topic}` | Notification sent to the topic. |
+| GET | `/api/v1/admin/users` | Accounts loaded. |
+| GET | `/api/v1/admin/users/{id}` | Account loaded. |
+| PATCH | `/api/v1/admin/users/{id}` | Account updated. |
+| POST | `/api/v1/admin/users/{id}/disable` | Account disabled. |
+| POST | `/api/v1/admin/users/{id}/enable` | Account enabled. |
+| DELETE | `/api/v1/admin/users/{id}/sessions` | Account signed out everywhere. |

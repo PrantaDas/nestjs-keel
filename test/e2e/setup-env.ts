@@ -39,9 +39,14 @@ process.env = {
   THROTTLE_LIMIT: '10000',
   THROTTLE_AUTH_LIMIT: '10000',
   THROTTLE_OTP_LIMIT: '10000',
-  // Integrations are faked in e2e (test/e2e/fakes.ts); real credentials must never be used.
-  SMTP_HOST: '',
-  TWILIO_ACCOUNT_SID: '',
+  // Integrations are faked in e2e (test/e2e/fakes.ts): these values only mark them as configured,
+  // nothing is ever sent to these hosts, and real credentials must never be used.
+  SMTP_HOST: 'smtp.e2e.invalid',
+  TWILIO_ACCOUNT_SID: 'ACe2e00000000000000000000000000000',
+  TWILIO_AUTH_TOKEN: 'e2e-not-a-real-token',
+  TWILIO_FROM: '+15005550006',
+  OTP_DEV_LOG: 'false',
+  OTP_RESEND_COOLDOWN_SECONDS: '0',
   FIREBASE_CREDENTIALS_JSON: '',
   FIREBASE_CREDENTIALS_FILE: '',
   S3_BUCKET: 'e2e-bucket',

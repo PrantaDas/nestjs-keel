@@ -1,27 +1,30 @@
 import '@/common/time/force-utc';
-import { JwtService } from '@nestjs/jwt';
-import { Role } from '@/common/auth/auth.types';
-import { requireEnv } from './load-env';
+import '@/config/load-env';
+import { NestFactory } from '@nestjs/core';
+import { isValidObjectId } from 'mongoose';
+import { SessionService } from '@/modules/identity/sessions/session.service';
+import { UsersService } from '@/modules/identity/users/users.service';
+import { CliModule } from './cli.module';
 
 /**
- * Prints an access token for local testing (curl, Postman, socket clients) until the real
- * auth module exists. Refuses to run in production.
+ * Prints an access token for an existing account, for curl, Postman and socket clients. It opens a
+ * real session (revocable like any other) for that account's current role. Refused in production.
  *
- *   node dist/cli/dev-token.js <userId> [user|admin|super_admin]
+ *   pnpm dev:token <userId>
  */
 async function main(): Promise<void> {
   if (process.env.NODE_ENV === 'production') throw new Error('dev-token is disabled in production');
+  const [userId] = process.argv.slice(2);
+  if (!userId || !isValidObjectId(userId)) throw new Error('Usage: pnpm dev:token <userId>');
 
-  const [userId = '000000000000000000000001', role = Role.USER] = process.argv.slice(2);
-  if (!Object.values(Role).includes(role as Role)) {
-    throw new Error(`role must be one of ${Object.values(Role).join(', ')}`);
+  const app = await NestFactory.createApplicationContext(CliModule, { logger: ['error', 'warn'] });
+  try {
+    const user = await app.get(UsersService).findOrFail(userId);
+    const pair = await app.get(SessionService).start({ userId, role: user.role, device: 'dev-token CLI', ip: null });
+    console.log(pair.accessToken);
+  } finally {
+    await app.close();
   }
-
-  const token = await new JwtService().signAsync(
-    { sub: userId, role },
-    { secret: requireEnv('JWT_ACCESS_SECRET'), expiresIn: '12h' },
-  );
-  console.log(token);
 }
 
 main().catch((err: unknown) => {

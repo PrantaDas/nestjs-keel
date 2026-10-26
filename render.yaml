@@ -19,7 +19,7 @@ envVarGroups:
       - key: NODE_ENV
         value: production
       - key: APP_NAME
-        value: nest-boilerplate
+        value: nestjs-keel
       - key: API_PREFIX
         value: api
       # Render's load balancer is one proxy hop in front of the app (real client IPs for rate limits).
@@ -50,9 +50,9 @@ envVarGroups:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: JWT_ISSUER
-        value: nest-boilerplate
+        value: nestjs-keel
       - key: JWT_AUDIENCE
-        value: nest-boilerplate
+        value: nestjs-keel
       - key: API_KEYS
         sync: false
       - key: OTP_DEV_LOG

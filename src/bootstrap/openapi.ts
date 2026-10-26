@@ -34,7 +34,7 @@ export async function createOpenApiDocument({
   try {
     app.setGlobalPrefix(apiPrefix);
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: version });
-    const title = process.env.APP_NAME || 'nest-boilerplate';
+    const title = process.env.APP_NAME || 'nestjs-keel';
     return { document: buildOpenApiDocument(app, { version, title }), routes: collectRouteMetadata(app) };
   } finally {
     await app.close();

@@ -66,6 +66,6 @@ jobs:
         with:
           context: .
           push: false
-          tags: nest-boilerplate:ci
+          tags: nestjs-keel:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max

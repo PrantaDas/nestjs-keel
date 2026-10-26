@@ -1,6 +1,6 @@
 {
   // A new machine needs Docker and an editor that speaks Dev Containers; nothing else.
-  "name": "nest-boilerplate",
+  "name": "nestjs-keel",
   "dockerComposeFile": ["../docker-compose.yml", "docker-compose.devcontainer.yml"],
   "service": "dev",
   "runServices": ["dev", "mongo", "redis-core", "redis-cache", "mailpit", "s3", "s3-init", "rabbitmq"],

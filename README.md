@@ -1,8 +1,15 @@
-# nest-boilerplate
+# nestjs-keel
 
-A production-ready NestJS 12 backend template: REST, GraphQL, Socket.IO, background jobs and
-schedules as separate processes from one codebase and one image, with MongoDB, Redis, BullMQ,
-S3, e-mail, SMS, push, Stripe, gRPC and RabbitMQ wired in and documented.
+[![CI](https://github.com/PrantaDas/nestjs-keel/actions/workflows/ci.yml/badge.svg)](https://github.com/PrantaDas/nestjs-keel/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Node 24](https://img.shields.io/badge/node-24-339933?logo=node.js&logoColor=white)
+![NestJS 12](https://img.shields.io/badge/NestJS-12-E0234E?logo=nestjs&logoColor=white)
+![TypeScript 6](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
+
+**The keel your NestJS backend is built on.** A production-ready NestJS 12 template: REST,
+GraphQL, Socket.IO, background jobs and schedules as separate processes from one codebase and one
+image, with MongoDB, Redis, BullMQ, S3, e-mail, SMS, push, Stripe, gRPC and RabbitMQ wired in,
+tested and documented. Deploys to Render, a VPS with PM2 + nginx, or any container platform.
 
 - **Node 24**, **pnpm 11**, TypeScript 6 (strict, no `any`), NestJS 12 on Express 5
 - MongoDB 8 (replica set) with Mongoose 9, Redis 7 (core + optional cache), BullMQ 6
@@ -37,6 +44,7 @@ boot validates them all ([`src/config/env.validation.ts`](src/config/env.validat
 Needs Node 24, pnpm 11 (`corepack enable`) and Docker.
 
 ```bash
+git clone https://github.com/PrantaDas/nestjs-keel.git my-api && cd my-api
 pnpm install
 cp .env.example .env              # works as is for local development
 pnpm infra:up                     # MongoDB, Redis ×2, Mailpit, S3 (SeaweedFS), RabbitMQ
@@ -65,6 +73,19 @@ pnpm dev:graphql    # GraphQL on :3002/graphql (GraphiQL in development)
 Local tools: Mailpit inbox http://localhost:8025, RabbitMQ console http://localhost:15672
 (guest/guest). With `OTP_DEV_LOG=true` (the default locally) one-time codes are
 printed in the api log instead of sent; set it to `false` to send them through the worker to Mailpit.
+
+## Start your own project from it
+
+1. On GitHub: **Use this template** (or `npx degit PrantaDas/nestjs-keel my-api` for a copy without
+   history, then `git init`).
+2. Rename it: `name`, `description`, `author`, `repository`, `homepage`, `bugs` in `package.json`;
+   `APP_NAME`, `JWT_ISSUER`, `JWT_AUDIENCE` and `MAIL_FROM` in `.env.example` (and their defaults in
+   `src/config/env.validation.ts`); `name` in `docker-compose.yml` and `.devcontainer/devcontainer.json`;
+   the values in `render.yaml`; the copyright holder in `LICENSE`.
+3. Keep the example module (`src/modules/examples`) while you learn the conventions: it is the
+   reference `pnpm g:module` copies. Payments switch themselves off without a Stripe key; drop the
+   `graphql` or `socket` process from your deployment if no client uses it.
+4. Add your first module: `pnpm g:module invoices` ([CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## Processes
 
@@ -150,3 +171,7 @@ render.yaml           Render Blueprint             ecosystem.config.cjs   PM2 (V
 | Uploads fail with "not set up yet"                         | `S3_BUCKET` empty, or `s3-init` did not run: `docker compose up s3-init`                                   |
 | Payments routes answer "not set up yet"                    | Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (see [integrations](docs/conventions/integrations.md)) |
 | `docker compose --profile app up` fails at boot            | It reads `.env` for secrets (copy `.env.example`); compose itself points the URLs at the service names     |
+
+## License
+
+[MIT](LICENSE) © Pranta Das

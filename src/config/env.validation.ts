@@ -47,7 +47,7 @@ const realSecret = (name: string) =>
 export const envValidationSchema = Joi.object({
   // ── App ──
   NODE_ENV: Joi.string().valid('development', 'test', 'staging', 'production').default('development'),
-  APP_NAME: Joi.string().default('nest-boilerplate'),
+  APP_NAME: Joi.string().default('nestjs-keel'),
   RELEASE: optionalString,
   API_PORT: Joi.number().port().default(3000),
   SOCKET_PORT: Joi.number().port().default(3001),
@@ -96,8 +96,8 @@ export const envValidationSchema = Joi.object({
     .invalid(Joi.ref('JWT_ACCESS_SECRET'))
     .messages({ 'any.invalid': '"JWT_REFRESH_SECRET" must differ from "JWT_ACCESS_SECRET"' }),
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('30d'),
-  JWT_ISSUER: Joi.string().default('nest-boilerplate'),
-  JWT_AUDIENCE: Joi.string().default('nest-boilerplate'),
+  JWT_ISSUER: Joi.string().default('nestjs-keel'),
+  JWT_AUDIENCE: Joi.string().default('nestjs-keel'),
   JWT_CLOCK_TOLERANCE_SECONDS: Joi.number().integer().min(0).max(300).default(5),
   AUTH_MAX_SESSIONS_PER_USER: Joi.number().integer().min(1).max(100).default(10),
   AUTH_MAX_FAILED_LOGINS: Joi.number().integer().min(1).max(100).default(5),

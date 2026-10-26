@@ -1,9 +1,36 @@
 {
-  "name": "nest-boilerplate",
+  "name": "nestjs-keel",
   "version": "0.1.0",
   "private": true,
-  "description": "Production-ready NestJS boilerplate: one codebase, five processes (api, graphql, socket, worker, cron).",
-  "license": "UNLICENSED",
+  "description": "Production-ready NestJS 12 backend template: REST, GraphQL, Socket.IO, jobs and schedules as separate processes from one codebase, ready to split into services.",
+  "keywords": [
+    "nestjs",
+    "boilerplate",
+    "template",
+    "typescript",
+    "mongodb",
+    "mongoose",
+    "redis",
+    "bullmq",
+    "graphql",
+    "socket.io",
+    "grpc",
+    "rabbitmq",
+    "stripe",
+    "pm2",
+    "render",
+    "microservices"
+  ],
+  "author": "Pranta Das <prantodas043@gmail.com> (https://github.com/PrantaDas)",
+  "homepage": "https://github.com/PrantaDas/nestjs-keel#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PrantaDas/nestjs-keel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PrantaDas/nestjs-keel/issues"
+  },
+  "license": "MIT",
   "packageManager": "pnpm@11.21.0",
   "engines": {
     "node": ">=24 <25"

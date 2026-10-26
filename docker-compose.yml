@@ -2,11 +2,11 @@
 # `pnpm dev:*`); `docker compose --profile app up -d --build` also runs every process from the
 # production image. Host ports are offset (27047, 6389, 6390) so they never clash with a MongoDB or
 # Redis already installed on the machine.
-name: nest-boilerplate
+name: nestjs-keel
 
 x-app: &app
   build: .
-  image: nest-boilerplate:local
+  image: nestjs-keel:local
   profiles: ['app']
   env_file: [{ path: .env, required: false }]
   environment:

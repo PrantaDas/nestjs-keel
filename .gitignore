@@ -31,6 +31,7 @@ logs/
 
 # generated API snapshot (pnpm openapi:export)
 /openapi.json
+/postman/
 
 # k6 / test output
 test/load/results/

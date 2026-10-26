@@ -71,6 +71,7 @@
     "admin:create": "nest build && node --enable-source-maps dist/cli/create-super-admin.js",
     "dev:token": "nest build && node --enable-source-maps dist/cli/dev-token.js",
     "openapi:export": "nest build && node --enable-source-maps dist/cli/openapi-export.js",
+    "postman:export": "pnpm openapi:export && node scripts/postman-export.mjs",
     "messages:export": "nest build && node --enable-source-maps dist/cli/messages-export.js",
     "graphql:schema": "nest build && node --enable-source-maps dist/cli/graphql-schema.js",
     "proto:gen": "buf generate && prettier --write src/infra/transport/grpc/generated",

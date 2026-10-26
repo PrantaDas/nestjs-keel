@@ -57,5 +57,6 @@ and `test/unit/openapi-contract.spec.ts` fails when the document and the code di
 - A controller serving several versions appears once per version; older versions get an
   operation id suffix (`notesCreateV1`) so generated clients stay unique.
 
-`pnpm openapi:export` writes `openapi.json` without a database (for client generation); Swagger UI
-is at `/api/docs` when `SWAGGER_ENABLED=true`.
+`pnpm openapi:export` writes `openapi.json` without a database (for client generation), and
+`pnpm postman:export` turns it into a Postman collection with a local environment. Swagger UI is
+at `/api/docs` (JSON at `/api/docs-json`) when `SWAGGER_ENABLED=true`.

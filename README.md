@@ -49,7 +49,7 @@ pnpm install
 cp .env.example .env              # works as is for local development
 pnpm infra:up                     # MongoDB, Redis ×2, Mailpit, S3 (SeaweedFS), RabbitMQ
 pnpm seed                         # optional: staff accounts + 50 people with history (prints passwords once)
-pnpm dev:api                      # http://localhost:3000/api/v1, docs at /api/docs
+pnpm dev:api                      # http://localhost:3000/api/v1, Swagger at http://localhost:3000/api/docs
 ```
 
 Check it:
@@ -107,22 +107,67 @@ Details: [docs/architecture/processes.md](docs/architecture/processes.md).
 
 ## Commands
 
-| Command                                                                | What                                                                                 |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `pnpm test` / `pnpm test:tz`                                           | Unit tests (no services) / under four server time zones                              |
-| `pnpm test:e2e` / `pnpm test:tz:e2e`                                   | End-to-end against compose services / under two zones                                |
-| `pnpm test:smoke`                                                      | Read-only checks of running processes (see [testing](docs/conventions/testing.md))   |
-| `pnpm lint` · `pnpm typecheck` · `pnpm format`                         | Quality gates (also run by Husky and CI)                                             |
-| `pnpm g:module invoices`                                               | New feature module from the example, wired into every process                        |
-| `pnpm migrate status\|up\|down\|create <name>`                         | Data migrations                                                                      |
-| `pnpm db:sync-indexes [--apply]`                                       | Compare / create schema indexes (production runs with autoIndex off)                 |
-| `pnpm seed [--users 200] [--reset]`                                    | Local data (refuses non-local databases)                                             |
-| `pnpm admin:create --email you@example.com`                            | Create a super admin (password prompted, never a flag)                               |
-| `pnpm dev:token <userId>`                                              | Access token for a user, for curl, smoke and k6                                      |
-| `pnpm openapi:export` · `pnpm messages:export` · `pnpm graphql:schema` | Generated contracts (tests fail when stale)                                          |
-| `pnpm proto:gen` · `pnpm proto:lint`                                   | gRPC types from `proto/`                                                             |
-| `pnpm playground`                                                      | Browser page on :5173 exercising REST, GraphQL, subscriptions and Socket.IO together |
-| `pnpm infra:up` · `pnpm infra:down`                                    | Local services                                                                       |
+| Command                                                                | What                                                                                                 |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `pnpm test` / `pnpm test:tz`                                           | Unit tests (no services) / under four server time zones                                              |
+| `pnpm test:e2e` / `pnpm test:tz:e2e`                                   | End-to-end against compose services / under two zones                                                |
+| `pnpm test:smoke`                                                      | Read-only checks of running processes (see [testing](docs/conventions/testing.md))                   |
+| `pnpm lint` · `pnpm typecheck` · `pnpm format`                         | Quality gates (also run by Husky and CI)                                                             |
+| `pnpm g:module invoices`                                               | New feature module from the example, wired into every process                                        |
+| `pnpm migrate status\|up\|down\|create <name>`                         | Data migrations                                                                                      |
+| `pnpm db:sync-indexes [--apply]`                                       | Compare / create schema indexes (production runs with autoIndex off)                                 |
+| `pnpm seed [--users 200] [--reset]`                                    | Local data (refuses non-local databases)                                                             |
+| `pnpm admin:create --email you@example.com`                            | Create a super admin (password prompted, never a flag)                                               |
+| `pnpm dev:token <userId>`                                              | Access token for a user, for curl, smoke and k6                                                      |
+| `pnpm postman:export`                                                  | Postman collection + local environment from the OpenAPI document ([API docs](#api-docs-and-postman)) |
+| `pnpm openapi:export` · `pnpm messages:export` · `pnpm graphql:schema` | Generated contracts (tests fail when stale)                                                          |
+| `pnpm proto:gen` · `pnpm proto:lint`                                   | gRPC types from `proto/`                                                                             |
+| `pnpm playground`                                                      | Browser page on :5173 exercising REST, GraphQL, subscriptions and Socket.IO together                 |
+| `pnpm infra:up` · `pnpm infra:down`                                    | Local services                                                                                       |
+
+## API docs and Postman
+
+### Swagger (OpenAPI)
+
+With the api running and `SWAGGER_ENABLED=true` (the local default in `.env.example`):
+
+| What                                 | Where                                  |
+| ------------------------------------ | -------------------------------------- |
+| Swagger UI                           | http://localhost:3000/api/docs         |
+| OpenAPI JSON                         | http://localhost:3000/api/docs-json    |
+| OpenAPI file (no running app needed) | `pnpm openapi:export` → `openapi.json` |
+
+- Every route is documented: success envelope, its own error codes with the exact messages,
+  auth, request examples. `test/unit/openapi-contract.spec.ts` fails the build when a route is not.
+- Try routes from the UI: **Auth › Sign up** (or **Sign in**), copy `data.accessToken`, press
+  **Authorize** and paste it under `bearer`. Machine routes use the `apiKey` scheme (`x-api-key`).
+- v1 and v2 routes are both listed; older versions carry a `V1` suffix on their operation id.
+- Keep it off in production (`SWAGGER_ENABLED=false`, the schema's default); hand out
+  `openapi.json` instead. GraphQL has its own schema: [`schema.gql`](schema.gql), and GraphiQL at
+  http://localhost:3002/graphql in development.
+
+### Postman collection
+
+```bash
+pnpm postman:export     # → postman/nestjs-keel.postman_collection.json
+                        #   postman/nestjs-keel.local.postman_environment.json
+```
+
+1. In Postman: **Import** → drop both files → select the **nestjs-keel (local)** environment.
+2. Run **Auth › Create an account…** (or **Sign in…**). The collection stores `accessToken` and
+   `refreshToken` from any response that returns them, and every signed-in request sends
+   `Bearer {{accessToken}}`; public routes send nothing, machine routes send `x-api-key: {{apiKey}}`.
+3. Change `email` / `password` in the environment to sign in as someone else; `timeZone` is sent
+   as `X-Timezone` on every request.
+
+Requests are grouped by Swagger tag, bodies come from the schema examples, path parameters (`:id`)
+and optional query parameters are Postman variables. For staging or production, duplicate the
+environment and change `baseUrl`. The files are generated (git-ignored): regenerate after API
+changes and share them with your team, or attach them to a release. `pnpm postman:export
+<openapi.json> <dir>` converts another document or writes elsewhere.
+
+Prefer no generated files? Postman can also **Import → Link** `http://localhost:3000/api/docs-json`
+directly, without the stored tokens and variables above.
 
 ## Deploy
 
@@ -161,7 +206,7 @@ render.yaml           Render Blueprint             ecosystem.config.cjs   PM2 (V
   · [GraphQL](docs/conventions/graphql.md) · [versioning](docs/conventions/versioning.md)
   · [testing](docs/conventions/testing.md)
 - Decisions: [docs/adr](docs/adr/README.md) · API catalogues: [messages](docs/api/messages.md),
-  [socket events](docs/api/socket-events.md), OpenAPI at `/api/docs`, GraphQL [schema.gql](schema.gql)
+  [socket events](docs/api/socket-events.md), [Swagger and Postman](#api-docs-and-postman), GraphQL [schema.gql](schema.gql)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md) · for coding agents: [AGENTS.md](AGENTS.md)
 
 ## Troubleshooting

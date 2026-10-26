@@ -113,6 +113,12 @@ export const RequestErrors = defineErrors('request', [2000, 2999], {
     status: HttpStatus.GONE,
     message: 'This version of the app is no longer supported. Please update the app.',
   },
+  /** A webhook whose signature does not match its body: never processed (not from the provider, or altered). */
+  INVALID_SIGNATURE: {
+    code: 2016,
+    status: HttpStatus.BAD_REQUEST,
+    message: "The request signature isn't valid.",
+  },
   /** The client hung up before its request was read (nginx's 499). Nobody receives it; logs only. */
   CLIENT_CLOSED_REQUEST: {
     code: 2011,

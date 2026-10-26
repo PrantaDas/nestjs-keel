@@ -11,6 +11,7 @@ import { IdentityApiModule } from '@/modules/identity/identity.module';
 import { NotesApiModule } from '@/modules/examples/notes.module';
 import { NotificationsApiModule } from '@/modules/notifications/notifications.module';
 import { OpsModule } from '@/modules/ops/ops.module';
+import { PaymentsApiModule } from '@/modules/payments/payments.module';
 import { CoreModule } from './core.module';
 import { httpProviders } from './http-providers';
 
@@ -26,6 +27,7 @@ import { httpProviders } from './http-providers';
     NotificationsApiModule,
     NotesApiModule,
     OpsModule,
+    PaymentsApiModule,
     // g:module api (keep this marker: the generator adds new modules above it)
   ],
   providers: [

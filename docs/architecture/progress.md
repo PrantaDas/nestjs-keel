@@ -29,3 +29,9 @@ Short, append-only notes on what was built per slice and what was decided along 
 - Multi-version controllers duplicate operation ids in OpenAPI: older versions get a `V<n>` suffix.
 - Found while building: core modules must export their queue registration, or a cron (producer
   in another module) cannot inject it; the cron process would not have booted.
+- Slice 7 (ops): queue counts, failed jobs (retry / discard, super admin, audited), processes from
+  heartbeats, parked outbox events with retry.
+- Slice 10 (Stripe): `PaymentGateway` port (Stripe implementation, or a "not set up" one without a
+  key), prices, checkout, payment intents, portal, admin products; `POST /api/webhooks/stripe`
+  verified against the raw body, idempotent by event id, recorded, applied by the worker through
+  the `stripe-events` queue; forward-only payment states and newest-wins subscription state.

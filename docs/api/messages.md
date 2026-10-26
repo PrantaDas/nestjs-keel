@@ -68,7 +68,7 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | 1101 | `ACCOUNT_DISABLED` | 401 | App + admin | This account is disabled. Please contact support. |
 | 1102 | `INVALID_API_KEY` | 401 | Internal | The service credentials are missing or not valid. |
 
-### Requests and validation (2000–2015)
+### Requests and validation (2000–2016)
 
 | Code | Key | HTTP | Who sees it | Message |
 | --- | --- | --- | --- | --- |
@@ -88,6 +88,7 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | 2013 | `IDEMPOTENCY_KEY_REUSED` | 422 | Internal | This request reference was already used with different details. Send a new reference. |
 | 2014 | `INVALID_IDEMPOTENCY_KEY` | 400 | Internal | The request reference isn't valid. Use 8 to 128 letters, digits, dashes or underscores. |
 | 2015 | `ENDPOINT_RETIRED` | 410 | Internal | This version of the app is no longer supported. Please update the app. |
+| 2016 | `INVALID_SIGNATURE` | 400 | Internal | The request signature isn't valid. |
 
 ### Identity (3000–3021)
 
@@ -133,6 +134,14 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | 5003 | `REMINDER_IN_PAST` | 400 | App | The reminder time has already passed. Choose a time in the future. |
 | 5004 | `NOTE_NOT_DELETED` | 409 | App | This note isn't in the bin, so there is nothing to restore. |
 
+### Payments (6000–6002)
+
+| Code | Key | HTTP | Who sees it | Message |
+| --- | --- | --- | --- | --- |
+| 6000 | `PRICE_NOT_FOUND` | 404 | App | This plan or product isn't available anymore. Choose another one. |
+| 6001 | `NO_BILLING_ACCOUNT` | 409 | App | You don't have any purchases or subscriptions to manage yet. |
+| 6002 | `WRONG_PRICE_TYPE` | 400 | App | This plan can't be bought this way. Use the subscription checkout for recurring plans. |
+
 ### Ops (7000–7003)
 
 | Code | Key | HTTP | Who sees it | Message |
@@ -149,7 +158,7 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 | 9000 | `INTERNAL_ERROR` | 500 | App + admin | Something went wrong on our side. Please try again in a moment. |
 | 9001 | `SERVICE_UNAVAILABLE` | 503 | App + admin | Our service is busy right now. Please try again in a moment. |
 | 9002 | `INTEGRATION_NOT_CONFIGURED` | 503 | App + admin | This feature isn't set up yet, so it can't be used right now. Please contact support. |
-| 9003 | `INTEGRATION_FAILED` | 502 | Admin | We couldn't complete this right now. Please try again in a moment. |
+| 9003 | `INTEGRATION_FAILED` | 502 | App + admin | We couldn't complete this right now. Please try again in a moment. |
 | 9004 | `LOCK_NOT_ACQUIRED` | 409 | Internal | Someone else is updating this right now. Please try again in a moment. |
 | 9100 | `DATABASE_UNAVAILABLE` | 503 | App + admin | Our service is busy right now. Please try again in a moment. |
 | 9101 | `REDIS_UNAVAILABLE` | 503 | App + admin | Our service is busy right now. Please try again in a moment. |
@@ -159,7 +168,7 @@ Built from the rule and the field's label (`tagIds` reads "Tags"), so every form
 
 | Code | Key | HTTP | Who sees it | Message |
 | --- | --- | --- | --- | --- |
-| 9150 | `INTEGRATION_UNAVAILABLE` | 503 | Internal | One of our services is busy right now. Please try again in a moment. |
+| 9150 | `INTEGRATION_UNAVAILABLE` | 503 | App + admin | One of our services is busy right now. Please try again in a moment. |
 | 9151 | `INTEGRATION_OUTCOME_UNKNOWN` | 502 | Internal | We couldn't confirm that this went through, so it wasn't repeated. Please check before trying again. |
 
 ## Duplicate values
@@ -168,12 +177,13 @@ When two requests save the same unique value at the same moment, the second gets
 
 | Field | Message |
 | --- | --- |
+| — | Your billing account is being set up. Please try again in a moment. |
 | `email` | An account with this email already exists. Sign in instead, or use another email. |
 | `phone` | This phone number is already used by another account. |
 
 ## Success messages
 
-### App (47 routes)
+### App (52 routes)
 
 | Method | Route | Message |
 | --- | --- | --- |
@@ -203,6 +213,11 @@ When two requests save the same unique value at the same moment, the second gets
 | POST | `/api/v1/notifications/{id}/read` | Marked as read. |
 | POST | `/api/v1/notifications/read-all` | All notifications marked as read. |
 | GET | `/api/v1/notifications/unread-count` | Unread count loaded. |
+| POST | `/api/v1/payments/checkout` | Checkout ready. |
+| GET | `/api/v1/payments/me` | Billing loaded. |
+| POST | `/api/v1/payments/payment-intents` | Payment ready. |
+| POST | `/api/v1/payments/portal` | Billing portal ready. |
+| GET | `/api/v1/payments/prices` | Plans loaded. |
 | GET | `/api/v1/users/me` | Account loaded. |
 | PATCH | `/api/v1/users/me` | Profile updated. |
 | DELETE | `/api/v1/users/me/avatar` | Profile picture removed. |
@@ -225,7 +240,7 @@ When two requests save the same unique value at the same moment, the second gets
 | POST | `/api/v2/notes/{id}/restore` | Note restored. |
 | GET | `/api/v2/notes/tags` | Tags loaded. |
 
-### Admin (16 routes)
+### Admin (17 routes)
 
 | Method | Route | Message |
 | --- | --- | --- |
@@ -239,6 +254,7 @@ When two requests save the same unique value at the same moment, the second gets
 | GET | `/api/v1/admin/ops/queues/{name}/failed` | Failed jobs loaded. |
 | DELETE | `/api/v1/admin/ops/queues/{name}/failed/{jobId}` | — (no content (204)) |
 | POST | `/api/v1/admin/ops/queues/{name}/failed/{jobId}/retry` | Retry started. |
+| POST | `/api/v1/admin/payments/products` | Product created. |
 | GET | `/api/v1/admin/users` | Accounts loaded. |
 | GET | `/api/v1/admin/users/{id}` | Account loaded. |
 | PATCH | `/api/v1/admin/users/{id}` | Account updated. |

@@ -4,6 +4,7 @@ import { AuditModule } from '@/modules/audit/audit.module';
 import { NotesCoreModule } from '@/modules/examples/notes.module';
 import { IdentityCoreModule } from '@/modules/identity/identity.module';
 import { NotificationsCoreModule } from '@/modules/notifications/notifications.module';
+import { PaymentsCoreModule } from '@/modules/payments/payments.module';
 
 /**
  * What command-line tools load: the shared infrastructure and every feature's core module (models,
@@ -17,6 +18,7 @@ import { NotificationsCoreModule } from '@/modules/notifications/notifications.m
     IdentityCoreModule,
     NotificationsCoreModule,
     NotesCoreModule,
+    PaymentsCoreModule,
     // g:module cli (keep this marker: the generator adds new modules above it)
   ],
 })

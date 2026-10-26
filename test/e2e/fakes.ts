@@ -9,6 +9,7 @@ import {
 } from '@/integrations/push/push.port';
 import { SmsMessage, SmsSender } from '@/integrations/sms/sms.port';
 import { FileStorage, ObjectMetadata, PresignedUpload, UploadInput } from '@/integrations/storage/storage.port';
+import { CheckoutInput, GatewayPrice, NewProduct, PaymentGateway } from '@/integrations/stripe/payment-gateway.port';
 
 /*
  * In-memory stand-ins for every outbound provider, bound with `overrideProvider(Port)`: e2e tests
@@ -127,11 +128,82 @@ export class FakeStorage extends FileStorage {
   }
 }
 
+/** Stripe stand-in: a fixed catalogue; every create returns ids shaped like Stripe's. */
+export class FakePaymentGateway extends PaymentGateway {
+  readonly prices: GatewayPrice[] = [
+    {
+      id: 'price_onetime1',
+      productId: 'prod_1',
+      productName: 'Sticker pack',
+      description: null,
+      unitAmount: 500,
+      currency: 'usd',
+      recurring: null,
+    },
+    {
+      id: 'price_monthly1',
+      productId: 'prod_2',
+      productName: 'Pro',
+      description: 'Pro plan',
+      unitAmount: 999,
+      currency: 'usd',
+      recurring: { interval: 'month', intervalCount: 1 },
+    },
+  ];
+  readonly idempotencyKeys: string[] = [];
+  private sequence = 0;
+
+  listPrices(): Promise<GatewayPrice[]> {
+    return Promise.resolve(this.prices);
+  }
+
+  getPrice(priceId: string): Promise<GatewayPrice | null> {
+    return Promise.resolve(this.prices.find((p) => p.id === priceId) ?? null);
+  }
+
+  createProductWithPrice(input: NewProduct, key: string): Promise<GatewayPrice> {
+    this.idempotencyKeys.push(key);
+    const price: GatewayPrice = {
+      id: `price_new${(this.sequence += 1)}`,
+      productId: `prod_new${this.sequence}`,
+      productName: input.name,
+      description: input.description ?? null,
+      unitAmount: input.unitAmount,
+      currency: input.currency,
+      recurring: input.interval ? { interval: input.interval, intervalCount: 1 } : null,
+    };
+    this.prices.push(price);
+    return Promise.resolve(price);
+  }
+
+  createCustomer(input: { userId: string }, key: string): Promise<string> {
+    this.idempotencyKeys.push(key);
+    return Promise.resolve(`cus_${input.userId}`);
+  }
+
+  createCheckoutSession(_input: CheckoutInput, key: string): Promise<{ id: string; url: string }> {
+    this.idempotencyKeys.push(key);
+    const id = `cs_test_${(this.sequence += 1)}`;
+    return Promise.resolve({ id, url: `https://checkout.stripe.test/${id}` });
+  }
+
+  createPaymentIntent(_input: unknown, key: string): Promise<{ id: string; clientSecret: string }> {
+    this.idempotencyKeys.push(key);
+    const id = `pi_test_${(this.sequence += 1)}`;
+    return Promise.resolve({ id, clientSecret: `${id}_secret_x` });
+  }
+
+  createPortalSession(): Promise<{ url: string }> {
+    return Promise.resolve({ url: 'https://billing.stripe.test/session' });
+  }
+}
+
 export interface Fakes {
   mail: FakeMail;
   sms: FakeSms;
   push: FakePush;
   storage: FakeStorage;
+  payments: FakePaymentGateway;
 }
 
 export const createFakes = (): Fakes => ({
@@ -139,4 +211,5 @@ export const createFakes = (): Fakes => ({
   sms: new FakeSms(),
   push: new FakePush(),
   storage: new FakeStorage(),
+  payments: new FakePaymentGateway(),
 });

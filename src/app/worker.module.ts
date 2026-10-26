@@ -4,6 +4,7 @@ import { HeartbeatModule } from '@/infra/heartbeat/heartbeat.module';
 import { NotesJobsModule } from '@/modules/examples/notes.module';
 import { IdentityJobsModule } from '@/modules/identity/identity.module';
 import { NotificationsJobsModule } from '@/modules/notifications/notifications.module';
+import { PaymentsJobsModule } from '@/modules/payments/payments.module';
 import { CoreModule } from './core.module';
 
 /** BullMQ worker process (no HTTP): processors and domain-event handlers (the outbox relays here). */
@@ -15,6 +16,7 @@ import { CoreModule } from './core.module';
     IdentityJobsModule,
     NotificationsJobsModule,
     NotesJobsModule,
+    PaymentsJobsModule.forRoot(),
     // g:module worker (keep this marker: the generator adds new modules above it)
   ],
 })

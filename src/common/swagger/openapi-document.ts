@@ -72,6 +72,9 @@ export function collectRouteMetadata(app: INestApplication): RouteMetadata[] {
     for (const name of scanner.getAllMethodNames(prototype)) {
       const handler = prototype[name];
       if (Reflect.getMetadata(PATH_METADATA, handler) === undefined) continue;
+      // Hidden on purpose (provider webhooks): not part of the client contract.
+      const hidden = Reflect.getMetadata(DECORATORS.API_EXCLUDE_ENDPOINT, handler) as { disable?: boolean } | undefined;
+      if (hidden?.disable) continue;
 
       const requestMethod = Reflect.getMetadata(METHOD_METADATA, handler) as RequestMethod;
       const args = (Reflect.getMetadata(ROUTE_ARGS_METADATA, controller, name) ?? {}) as Record<

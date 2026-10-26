@@ -11,6 +11,7 @@ import { MailSender } from '@/integrations/mail/mail.port';
 import { PushSender } from '@/integrations/push/push.port';
 import { SmsSender } from '@/integrations/sms/sms.port';
 import { FileStorage } from '@/integrations/storage/storage.port';
+import { PaymentGateway } from '@/integrations/stripe/payment-gateway.port';
 import { createFakes, Fakes } from './fakes';
 import { resetState } from './helpers';
 
@@ -47,7 +48,9 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
     .overrideProvider(PushSender)
     .useValue(fakes.push)
     .overrideProvider(FileStorage)
-    .useValue(fakes.storage);
+    .useValue(fakes.storage)
+    .overrideProvider(PaymentGateway)
+    .useValue(fakes.payments);
   if (options.clock) builder = builder.overrideProvider(Clock).useValue(options.clock);
   if (options.configure) builder = options.configure(builder);
 

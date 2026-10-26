@@ -32,6 +32,8 @@ export interface NewAccount {
   email?: string | null;
   phone?: string | null;
   password?: string | null;
+  /** An already computed hash (`hashPassword`), for bulk creation such as the seed. */
+  passwordHash?: string;
   role?: Role;
   emailVerified?: boolean;
 }
@@ -64,6 +66,7 @@ export class UsersService extends UserDirectory {
 
   async create(input: NewAccount, session?: ClientSession): Promise<UserDoc> {
     const now = this.time.now();
+    const passwordHash = input.passwordHash ?? (input.password ? await hashPassword(input.password) : null);
     return this.users.create(
       {
         name: input.name.trim(),
@@ -71,8 +74,8 @@ export class UsersService extends UserDirectory {
         email: input.email ?? null,
         emailVerifiedAt: input.emailVerified ? now : null,
         phone: input.phone ?? null,
-        passwordHash: input.password ? await hashPassword(input.password) : null,
-        passwordSetAt: input.password ? now : null,
+        passwordHash,
+        passwordSetAt: passwordHash ? now : null,
         role: input.role ?? Role.USER,
         status: 'active',
       },

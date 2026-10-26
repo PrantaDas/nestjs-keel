@@ -44,9 +44,10 @@ export class DeviceRegistryService extends DeviceRegistry {
       .exec();
     if (!existing) {
       // Topic membership is best effort: a push provider outage must not fail a sign-in.
-      await this.push
-        .subscribeToTopic([device.token], TOPIC_ALL)
-        .catch((err: unknown) => this.logger.warn({ err, userId }, 'Token not subscribed to the default topic'));
+      await this.push.subscribeToTopic([device.token], TOPIC_ALL).catch((err: unknown) => {
+        if (isNotConfigured(err)) return;
+        this.logger.warn({ err, userId }, 'Token not subscribed to the default topic');
+      });
     }
   }
 
@@ -93,11 +94,14 @@ export class DeviceRegistryService extends DeviceRegistry {
     try {
       await this.push.unsubscribeFromTopic(tokens, TOPIC_ALL);
     } catch (err) {
-      const notConfigured =
-        err instanceof BaseException && err.errorCode === SystemErrors.INTEGRATION_NOT_CONFIGURED.code;
-      if (strict && !notConfigured) throw err;
+      if (strict && !isNotConfigured(err)) throw err;
       this.logger.warn({ err, count: tokens.length }, 'Tokens not unsubscribed from topics');
     }
     await this.tokens.deleteMany({ token: { $in: tokens } }).exec();
   }
+}
+
+/** Push not set up: nothing was ever subscribed, so there is nothing to do or report. */
+function isNotConfigured(error: unknown): boolean {
+  return error instanceof BaseException && error.errorCode === SystemErrors.INTEGRATION_NOT_CONFIGURED.code;
 }

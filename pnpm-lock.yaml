@@ -116,9 +116,6 @@ importers:
       amqplib:
         specifier: 2.2.0
         version: 2.2.0
-      bcryptjs:
-        specifier: 3.0.3
-        version: 3.0.3
       bullmq:
         specifier: 6.3.13
         version: 6.3.13(ioredis@6.0.0(supports-color@8.1.1))
@@ -2933,10 +2930,6 @@ packages:
   baseline-browser-mapping@2.11.32:
     resolution: {integrity: sha512-UvuxFU9P3hM29LrQdwu0cD6w6/+SFr+UlB9s/knI7+O2rK9xFxKUwSDWxGdbbqQ9/V7BJ5s0NI5nQAE4uJp3gQ==}
     engines: {node: '>=6.0.0'}
-    hasBin: true
-
-  bcryptjs@3.0.3:
-    resolution: {integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==}
     hasBin: true
 
   bignumber.js@9.3.1:
@@ -8493,8 +8486,6 @@ snapshots:
   base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.11.32: {}
-
-  bcryptjs@3.0.3: {}
 
   bignumber.js@9.3.1: {}
 
